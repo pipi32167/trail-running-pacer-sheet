@@ -1,12 +1,12 @@
 'use strict';
 const documentURL = document.currentScript.src;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register(new URL('./service-worker.js?v=frontend-v20',documentURL)).then(()=>navigator.serviceWorker.ready).then(()=>{
+  navigator.serviceWorker.register(new URL('./service-worker.js?v=frontend-v22',documentURL)).then(()=>navigator.serviceWorker.ready).then(()=>{
     $('privacy-note').textContent='GPX 仅在浏览器内处理。页面已缓存，断网也能计算。';
   }).catch(()=>{});
 }
 const $ = (id) => document.getElementById(id);
-const state = {file: null, text: '', inspection: null, result: null, inspecting: false, generating: false, version: 0, controller: null};
+const state = {file: null, text: '', inspection: null, result: null, inspecting: false, generating: false, version: 0, controller: null, style: 'paper'};
 const MAX_SIZE = 12 * 1024 * 1024;
 const fmt = TrailTime.elapsed;
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -97,7 +97,7 @@ async function api(path, body, signal) {
   const sha256 = [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
   return new Promise((resolve,reject)=>{
     if(signal?.aborted) {const e=new Error('已取消旧路线的读取。');e.cancelled=true;reject(e);return;}
-    const worker = new Worker(new URL('./pace-worker.js?v=frontend-v20',documentURL));
+    const worker = new Worker(new URL('./pace-worker.js?v=frontend-v22',documentURL));
     const cleanup=()=>{clearTimeout(timer);signal?.removeEventListener('abort',abort);worker.terminate();};
     const abort=()=>{cleanup();const e=new Error('已取消旧路线的读取。');e.cancelled=true;reject(e);};
     const timer=setTimeout(()=>{cleanup();reject(new Error('处理超时，请精简 GPX 后重试，已选路线会保留。'));},45000);
@@ -218,6 +218,7 @@ $('pace-form').addEventListener('submit', async (event) => {
   clearResult(); state.generating = true; busy(); status('正在按路线起伏分配时间…');
   try {
     const response = await api('/api/generate', {gpx:state.text, filename:state.file.name, target:$('target').value.trim(), options:settings});
+    response.svg = TrailSVG.render(response.plan, {style: state.style});
     state.result = response;
     $('file-state').textContent = `${km(response.plan.route.distance_m)} km · 爬升 ${Math.round(response.plan.route.ascent_m)} m`;
     renderResult(response);
@@ -256,6 +257,42 @@ for (const btn of document.querySelectorAll('[data-export]')) btn.addEventListen
   } catch(e) {status(e.message || '下载未完成，请重试。','error');}
 });
 $('print').addEventListener('click',()=>window.print());
+
+/* ---- 导出图风格 ---- */
+function isDarkColor(hex) {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.5;
+}
+function tableTokens(key) {
+  const style = TrailSVG.STYLES[key] || TrailSVG.STYLES.paper;
+  const dark = isDarkColor(style.paper);
+  return {
+    '--table-paper': style.paper, '--table-ink': style.ink, '--table-sub': style.sub,
+    '--table-rule': dark ? TrailSVG.mix(style.paper, style.ink, .22) : '#23201c22',
+    '--table-head': style.head, '--table-name': dark ? style.name : style.ink,
+    '--table-late': style.late, '--table-strong': style.name,
+    '--table-chosen': TrailSVG.mix(style.paper, style.heat[0], .3),
+    '--table-chosen-strong': TrailSVG.mix(style.paper, style.heat[0], .45),
+    '--table-foot': TrailSVG.mix(style.paper, style.ink, .05)
+  };
+}
+function applyStyle(key) {
+  state.style = TrailSVG.STYLES[key] ? key : 'paper';
+  for (const [name, value] of Object.entries(tableTokens(state.style))) document.documentElement.style.setProperty(name, value);
+  if ($('table-style').value !== state.style) $('table-style').value = state.style;
+  if ($('wallpaper-theme')) $('wallpaper-theme').value = isDarkColor((TrailSVG.STYLES[state.style] || TrailSVG.STYLES.paper).paper) ? 'dark' : 'light';
+  if (!state.result) return;
+  state.result.svg = TrailSVG.render(state.result.plan, {style: state.style});
+  renderResult(state.result);
+  if (!$('wallpaper-panel').hidden) drawWallpaper();
+}
+for (const [key, style] of Object.entries(TrailSVG.STYLES)) {
+  const option = document.createElement('option');
+  option.value = key; option.textContent = style.label;
+  $('table-style').append(option);
+}
+$('table-style').addEventListener('change', (event) => applyStyle(event.target.value));
+applyStyle('paper');
 
 /* ---- 手机壁纸导出 ---- */
 const WALL = TrailWallpaper;
