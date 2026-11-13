@@ -44,3 +44,20 @@ test('背景只影响留白，原图白底与图形保持原样',()=>{
  assert.ok(wallpaper.render(source,{theme:'light'}).includes(source));
  assert.ok(wallpaper.render(source,{theme:'dark'}).includes(source));
 });
+const lightTable='<svg xmlns="http://www.w3.org/2000/svg" width="1378" height="827"><rect width="1378" height="100%" fill="#ffffff"/></svg>';
+const darkTable='<svg xmlns="http://www.w3.org/2000/svg" width="1378" height="827"><rect width="1378" height="100%" fill="#14120f"/></svg>';
+test('壁纸底色始终与表格底色拉开差距，留白看得见',()=>{
+  assert.equal(wallpaper.layout(lightTable,{theme:'dark'}).background,'#14120f');
+  assert.equal(wallpaper.layout(darkTable,{theme:'dark'}).background,'#080706');
+  assert.equal(wallpaper.layout(darkTable,{theme:'light'}).background,'#efe9dc');
+  assert.equal(wallpaper.layout(lightTable,{theme:'light'}).background,'#fbf7ef');
+  assert.notEqual(wallpaper.layout(darkTable,{theme:'dark'}).background,wallpaper.layout(darkTable).paper);
+});
+test('壁纸底色写进导出 SVG，叠层按背景明暗换色',()=>{
+  assert.ok(wallpaper.render(darkTable,{theme:'dark'}).includes('fill="#080706"'));
+  assert.ok(wallpaper.render(darkTable,{theme:'light'}).includes('fill="#efe9dc"'));
+  const darkMask=wallpaper.maskOverlay(wallpaper.layout(lightTable,{theme:'dark'}));
+  const lightMask=wallpaper.maskOverlay(wallpaper.layout(darkTable,{theme:'light'}));
+  assert.ok(darkMask.includes('#ffffff'));
+  assert.ok(lightMask.includes('#2b2721'));
+});

@@ -1,7 +1,7 @@
 'use strict';
 const documentURL = document.currentScript.src;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register(new URL('./service-worker.js?v=frontend-v22',documentURL)).then(()=>navigator.serviceWorker.ready).then(()=>{
+  navigator.serviceWorker.register(new URL('./service-worker.js?v=frontend-v24',documentURL)).then(()=>navigator.serviceWorker.ready).then(()=>{
     $('privacy-note').textContent='GPX 仅在浏览器内处理。页面已缓存，断网也能计算。';
   }).catch(()=>{});
 }
@@ -97,7 +97,7 @@ async function api(path, body, signal) {
   const sha256 = [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
   return new Promise((resolve,reject)=>{
     if(signal?.aborted) {const e=new Error('已取消旧路线的读取。');e.cancelled=true;reject(e);return;}
-    const worker = new Worker(new URL('./pace-worker.js?v=frontend-v22',documentURL));
+    const worker = new Worker(new URL('./pace-worker.js?v=frontend-v24',documentURL));
     const cleanup=()=>{clearTimeout(timer);signal?.removeEventListener('abort',abort);worker.terminate();};
     const abort=()=>{cleanup();const e=new Error('已取消旧路线的读取。');e.cancelled=true;reject(e);};
     const timer=setTimeout(()=>{cleanup();reject(new Error('处理超时，请精简 GPX 后重试，已选路线会保留。'));},45000);
@@ -280,7 +280,6 @@ function applyStyle(key) {
   state.style = TrailSVG.STYLES[key] ? key : 'paper';
   for (const [name, value] of Object.entries(tableTokens(state.style))) document.documentElement.style.setProperty(name, value);
   if ($('table-style').value !== state.style) $('table-style').value = state.style;
-  if ($('wallpaper-theme')) $('wallpaper-theme').value = isDarkColor((TrailSVG.STYLES[state.style] || TrailSVG.STYLES.paper).paper) ? 'dark' : 'light';
   if (!state.result) return;
   state.result.svg = TrailSVG.render(state.result.plan, {style: state.style});
   renderResult(state.result);

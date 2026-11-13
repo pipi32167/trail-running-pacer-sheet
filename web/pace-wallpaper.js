@@ -14,6 +14,10 @@ function number(value,fallback,min,max,label){
  if(value===''||!Number.isFinite(n)||n<min||n>max)throw new Error(`${label}应在 ${min} 至 ${max} 之间。`);
  return n;
 }
+function luminance(hex){const [r,g,b]=[1,3,5].map((i)=>parseInt(hex.slice(i,i+2),16)/255);return .2126*r+.7152*g+.0722*b;}
+function paperOf(svg){const m=/height="100%" fill="(#[0-9a-fA-F]{6})"/.exec(svg);return m?m[1]:'#ffffff';}
+/* Background must differ from the table paper, otherwise the margins look like part of the table. */
+function background(theme,paper){const darkTable=luminance(paper)<.5;if(theme==='light')return darkTable?'#efe9dc':'#fbf7ef';return darkTable?'#080706':'#14120f';}
 function layout(svg,options={}){
  const tag=typeof svg==='string'&&svg.match(/^\s*<svg\b[^>]*>/);
  const width=Number(tag&&tag[0].match(/\bwidth="([\d.]+)"/)?.[1]);
@@ -33,19 +37,20 @@ function layout(svg,options={}){
  const image={width:rotatedWidth*scale,height:rotatedHeight*scale};
  image.x=(w-image.width)/2;
  image.y=anchor==='center'?(band.top+band.bottom-image.height)/2:band.top;
- return {width:w,height:h,source:{width,height},band,image,rotation,scale,anchor,theme:options.theme==='light'?'light':'dark'};
+ const theme=options.theme==='light'?'light':'dark',paper=paperOf(svg);
+ return {width:w,height:h,source:{width,height},band,image,rotation,scale,anchor,theme,paper,background:background(theme,paper)};
 }
 function render(svg,options={}){
  const l=layout(svg,options),i=l.image;
  // The source export already touches its bounds. Retain its full viewBox:
  // removing any further margin would cut metadata or the outer table border.
  const transform=`translate(${i.x} ${i.y}) scale(${l.scale}) translate(${l.rotation?l.source.height:0} 0) rotate(${l.rotation})`;
- return `<svg xmlns="http://www.w3.org/2000/svg" width="${l.width}" height="${l.height}" viewBox="0 0 ${l.width} ${l.height}"><title>原版配速表 · 手机壁纸</title><rect width="${l.width}" height="${l.height}" fill="${l.theme==='light'?'#fbf7ef':'#14120f'}"/><g transform="${transform}">${svg.trim()}</g></svg>`;
+ return `<svg xmlns="http://www.w3.org/2000/svg" width="${l.width}" height="${l.height}" viewBox="0 0 ${l.width} ${l.height}"><title>原版配速表 · 手机壁纸</title><rect width="${l.width}" height="${l.height}" fill="${l.background}"/><g transform="${transform}">${svg.trim()}</g></svg>`;
 }
 function maskOverlay(l){
- const w=l.width,h=l.height,ink=l.theme==='light'?'#2b2721':'#ffffff',soft=l.theme==='light'?'#2b272159':'#999999a6';
+ const w=l.width,h=l.height,light=luminance(l.background)>.5,ink=light?'#2b2721':'#ffffff',soft=light?'#2b272159':'#999999a6';
  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" aria-hidden="true"><g fill="${ink}" text-anchor="middle" font-family="sans-serif"><text x="${w/2}" y="${h*.11}" font-size="${w*.035}">11月13日 星期五</text><text x="${w/2}" y="${h*.25}" font-size="${w*.25}">09:24</text></g><g fill="${soft}"><circle cx="${w*.17}" cy="${h*.945}" r="${w*.06}"/><circle cx="${w*.83}" cy="${h*.945}" r="${w*.06}"/><rect x="${w*.35}" y="${h*.975}" width="${w*.3}" height="${h*.004}" rx="5"/></g></svg>`;
 }
-root.TrailWallpaper={DEVICES,layout,render,maskOverlay};
+root.TrailWallpaper={DEVICES,layout,render,maskOverlay,luminance,paperOf,background};
 if(typeof module!=='undefined')module.exports=root.TrailWallpaper;
 })(globalThis);
