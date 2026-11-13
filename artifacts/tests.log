@@ -1,0 +1,16 @@
+python3 -m unittest discover -s tests -v
+test_all_missing_elevation_is_actionable (test_app.RouteBehaviourTests.test_all_missing_elevation_is_actionable) ... ok
+test_filename_does_not_allow_path_or_html_in_render (test_app.RouteBehaviourTests.test_filename_does_not_allow_path_or_html_in_render) ... ok
+test_malformed_and_unsafe_xml_rejected (test_app.RouteBehaviourTests.test_malformed_and_unsafe_xml_rejected) ... ok
+test_missing_elevations_are_estimated_and_no_station_uses_endpoints (test_app.RouteBehaviourTests.test_missing_elevations_are_estimated_and_no_station_uses_endpoints) ... ok
+test_multiple_tracks_require_a_selection (test_app.RouteBehaviourTests.test_multiple_tracks_require_a_selection) ... ok
+test_nonfinite_or_out_of_range_parameters_rejected (test_app.RouteBehaviourTests.test_nonfinite_or_out_of_range_parameters_rejected) ... ok
+test_one_target_above_24_hours_and_station_rest (test_app.RouteBehaviourTests.test_one_target_above_24_hours_and_station_rest) ... ok
+test_rest_cannot_exceed_target (test_app.RouteBehaviourTests.test_rest_cannot_exceed_target) ... ok
+test_short_target_with_five_columns_has_actionable_error (test_app.RouteBehaviourTests.test_short_target_with_five_columns_has_actionable_error) ... ok
+test_uploaded_route_uses_confirmed_defaults_and_first_cp10 (test_app.RouteBehaviourTests.test_uploaded_route_uses_confirmed_defaults_and_first_cp10) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 2.630s
+
+OK

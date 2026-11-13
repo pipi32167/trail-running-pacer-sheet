@@ -1,0 +1,15 @@
+AGENTS.md validation: /Volumes/WD_BLACK_2T/work/million/trail-running/AGENTS.md
+scope=root budget=60 claims=7
+
+[PASS] file_exists: /Volumes/WD_BLACK_2T/work/million/trail-running/AGENTS.md
+[PASS] no_placeholders: no template markers
+[PASS] line_budget: 15/60 non-blank lines (root)
+[PASS] commands_verified: 7 claim(s) checked
+[PASS] paths_resolve: 4 path reference(s) resolve
+[PASS] testing_block: Testing section carries a verifiable command and the TDD contract
+[PASS] no_global_duplication: no global duplication
+[PASS] no_secrets: no credential-looking literals
+[skip] nested_scope: root file
+[PASS] readme_overlap: no verbatim README paragraphs
+
+0 failed, 0 warnings, 10 passed of 10 checks

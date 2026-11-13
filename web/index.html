@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fbf7ef">
+  <meta name="description" content="上传 GPX，输入完赛时间，生成你的体感一致越野配速表。">
+  <title>山野有数 · 体感一致配速表</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="./favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="./favicon-16.png" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="stylesheet" href="./style.css?v=frontend-v8">
+  <script src="./pace-time.js?v=frontend-v8" defer></script>
+  <script src="./app.js?v=frontend-v8" defer></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="山野有数 首页"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M10 47.4C20 44.4 44 44.7 54 46.4" stroke="#e0b23c" stroke-width="6" opacity=".5" stroke-linecap="round" fill="none"/><path d="M9 48L22 26L30 37L40 16L55 48" stroke="#23201c" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="40" cy="16" r="4.6" fill="#e0533c"/></svg> 山野有数 <span class="brand-en">TRAIL NOTES</span></a>
+      <span class="header-note">一条路线，一份山野计划。</span>
+    </header>
+    <main>
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="small-line"></span> 给下一次出发，画个计划</p>
+          <h1 id="page-title">山路有起伏，<br>奔跑<span class="marker">有节奏。</span></h1>
+          <p class="hero-description">一份体感一致的越野配速表。<br>带上你的路线，剩下的交给计算。</p>
+        </div>
+        <div class="mountain-sketch" aria-hidden="true">
+          <svg viewBox="0 0 550 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M49 250C106 264 406 260 506 249" stroke="#23201c" stroke-width="1.6"/>
+            <path d="M59 245L125 153L155 182L258 41L300 109L329 86L447 245M101 247L169 175M215 102L258 118L277 73M242 115L223 153M274 119L305 160M335 110L360 155L379 156M442 244L475 203L500 247" stroke="#23201c" stroke-width="2.7" stroke-linejoin="round" stroke-linecap="round"/>
+            <path d="M66 248L130 156L154 185L258 45L300 112L330 89L449 248" stroke="#23201c" stroke-width=".65" opacity=".5"/>
+            <path d="M259 44L259 14L291 22L259 29" stroke="#e0533c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M184 247C145 228 208 226 238 210C282 186 221 183 262 161C281 151 314 153 300 133" stroke="#2a4d9b" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 8"/>
+            <circle cx="184" cy="246" r="5" fill="#2a4d9b"/>
+            <path d="M113 85C97 69 89 69 79 76M98 61L104 48M71 59L60 48M64 90L46 92" stroke="#e0b23c" stroke-width="2.7" stroke-linecap="round"/>
+            <path d="M366 64C391 44 420 47 426 58M410 40L427 58L407 62" stroke="#2a4d9b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M119 260L116 267M141 260L144 266M387 260L383 267M407 257L413 263" stroke="#23201c" stroke-width="1.4"/>
+          </svg>
+          <span class="sketch-label label-summit">慢慢来，也会到。</span>
+          <span class="sketch-label label-route">your trail, your rhythm</span>
+          <span class="sketch-stamp">去山里<br>找节奏</span>
+        </div>
+      </section>
+
+      <section class="planner" aria-labelledby="planner-title">
+        <div class="planner-heading"><h2 id="planner-title">把路线放在这里</h2><span class="pencil-note">路线、用时、发枪时间 ↘</span></div>
+        <form id="pace-form" novalidate>
+          <div class="main-fields">
+            <div class="file-field">
+              <label class="field-label" for="gpx-file"><span class="step-number">01</span> 你的路线</label>
+              <label id="drop-zone" class="drop-zone" for="gpx-file" tabindex="0" role="button" aria-label="选择或拖入 GPX 路线文件">
+                <span class="upload-symbol" aria-hidden="true">＋</span>
+                <span id="file-title">拖入 GPX 路线文件</span>
+                <span id="file-hint" class="upload-hint">或点击选择 · GPX 格式，最大 12 MB</span>
+                <span id="file-state" class="file-state" hidden></span>
+              </label>
+              <input id="gpx-file" type="file" class="visually-hidden">
+              <p class="field-footnote" id="privacy-note">GPX 仅在浏览器内处理，不上传到服务器。</p>
+            </div>
+            <div class="time-field">
+              <label class="field-label" for="target"><span class="step-number">02</span> 目标完赛时间</label>
+              <div class="duration-wrap"><input id="target" name="target" type="text" inputmode="numeric" value="12:00" maxlength="8" autocomplete="off" spellcheck="false" aria-describedby="time-hint"><span>小时 : 分钟</span></div>
+              <p id="time-hint" class="time-hint">按自己的节奏，给终点一个时间。</p>
+              <span class="target-note" id="target-note">五档参考方案 · 相邻间隔 30 分钟</span>
+              <div class="race-start-field">
+                <label class="field-label" for="start-time"><span class="step-number">03</span> 发枪时间 <span class="required-note">必填</span></label>
+                <input id="start-time" name="start-time" type="time" required aria-describedby="start-time-hint">
+                <p id="start-time-hint" class="time-hint">填写比赛当地时间，用于计算到站钟点与跨日。</p>
+              </div>
+            </div>
+          </div>
+
+          <details id="advanced" class="advanced">
+            <summary><span class="disclosure-arrow" aria-hidden="true">＋</span> Advanced options <span class="summary-cn">高级选项</span><span class="defaults-tag">已为你选好默认值</span></summary>
+            <div class="advanced-body">
+              <p class="advanced-intro">保留默认值即可生成。修改参数后，点击“生成配速表”更新结果。</p>
+              <div id="track-panel" hidden><label class="setting-label" for="track-index">选择路线</label><select id="track-index"></select></div>
+              <div class="settings-grid">
+                <label>高程平滑窗口 <span>m</span><input id="ascent-window" type="number" min="0" max="2000" step="10" value="100"></label>
+                <label>峰谷反转阈值 <span>m</span><input id="ascent-threshold" type="number" min="0" max="1000" value="10"></label>
+                <label>爬升等效距离 <span>km / 100 m</span><input id="ascent-factor" type="number" min="0" max="10" step="0.1" value="1"></label>
+                <label>距离翻倍配速增幅 <span>%</span><input id="fatigue" type="number" min="0" max="100" step="1" value="8"></label>
+                <label>相邻方案间隔 <span>分钟</span><input id="target-step" type="number" min="1" max="1440" value="30"></label>
+                <label>表格括号内容<select id="secondary-display"><option value="arrival_time">到站钟点（当地时间）</option><option value="pace">区间配速（分:秒/km）</option><option value="equivalent_pace">区间等效配速（分:秒/km）</option></select></label>
+                <label>目标方案<select id="target-count"><option value="five">五档方案</option><option value="one">仅目标方案</option></select></label>
+              </div>
+              <div class="repair-policy"><strong>缺失高程自动补齐</strong><p>中间缺口按距离插值，首尾使用最近有效高程。生成结果会标注修复数量；全部高程缺失时停止计算。</p></div>
+              <section id="checkpoint-panel" class="checkpoint-panel" hidden aria-labelledby="checkpoint-title"><div class="subheading"><h3 id="checkpoint-title">站点与停留</h3><span>关门时间填写发枪后的累计用时</span></div><p id="cp-hint"></p><div id="checkpoint-fields"></div></section>
+              <section id="manual-panel" hidden><h3>手动站点（可选）</h3><p>未识别到站点时默认只列起终点。每行填写：名称,累计公里,停留分钟,关门用时。终点会自动加入。</p><label class="visually-hidden" for="manual-cps">手动站点</label><textarea id="manual-cps" rows="4" placeholder="山脚补给站,10.5,5,03:00"></textarea></section>
+            </div>
+          </details>
+          <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+          <div class="form-footer"><p>把力气留给山野，<span>把计算交给这里。</span></p><button id="generate" class="button button-primary" type="submit">生成配速表 <span aria-hidden="true">↗</span></button></div>
+        </form>
+        <span class="paper-corner" aria-hidden="true"></span>
+      </section>
+      <div class="under-form"><span><span class="blue-dot"></span> 体感一致 · 随地形调整配速</span><span>每一段山路，都值得好好计划。</span></div>
+
+      <section id="results" class="results" hidden aria-labelledby="result-title">
+        <div class="result-heading"><div><p class="eyebrow">YOUR TRAIL PLAN / 配速计划</p><h2 id="result-title">你的山野节奏</h2></div><div class="exports" aria-label="下载配速表"><button type="button" data-export="svg" class="button button-small">SVG</button><button type="button" data-export="png" class="button button-small">PNG</button><button type="button" data-export="csv" class="button button-small">CSV</button><button id="print" type="button" class="button button-small">打印</button></div></div>
+        <div id="route-stats" class="route-stats"></div>
+        <div class="profile-paper"><div class="profile-heading"><span>沿途的起伏</span><span>高程轮廓 · 100 m 平滑，仅作路线示意</span></div><svg id="elevation-chart" viewBox="0 0 1080 180" role="img" aria-label="路线高程曲线"></svg></div>
+        <div id="result-notes" class="result-notes"></div>
+        <div class="table-paper"><div class="table-topline"><span>CHECKPOINT NOTES</span><span id="table-legend"></span><span class="mobile-table-hint">左右滑动查看全部方案 →</span></div><div class="table-scroll" tabindex="0" role="region" aria-label="配速表，可横向滚动"><table id="pace-table"></table></div></div>
+        <details class="calculation-notes"><summary>计算说明与路线提示</summary><div id="calculation-detail"></div></details>
+      </section>
+    </main>
+    <footer class="site-footer"><span>山野有数 <span class="footer-cross">×</span> 每一步，都算数。</span><span>基于体感一致思路的独立实现</span></footer>
+  </div>
+</body>
+</html>

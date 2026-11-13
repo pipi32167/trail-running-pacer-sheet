@@ -1,0 +1,129 @@
+{
+  "distance_m": 55307.65836963937,
+  "ascent_m": 1906.036550369948,
+  "descent_m": 1905.036550369948,
+  "sample_m": 5.0,
+  "smoothing_m": 20.0,
+  "ascent_smoothing_m": 100.0,
+  "ascent_method": "hysteresis",
+  "ascent_threshold_m": 10.0,
+  "elevation_spike_m": 30.0,
+  "distance_tolerance_m": 0.0,
+  "diagnostics": {
+    "quality_flagged_points": 0,
+    "quality_metadata_points": 0,
+    "invalid_quality_fields": 0,
+    "source_points": 30653,
+    "original_distance_m": 55307.65836963937,
+    "processed_distance_m": 55307.65836963937,
+    "distance_removed_m": 0.0,
+    "spacing_min_m": 0.09789645037380978,
+    "spacing_median_m": 1.2508379574865103,
+    "spacing_max_m": 297.3728092723759,
+    "distance_trial_tolerance_m": 5.0,
+    "distance_trial_m": 54337.91567652155,
+    "geometry_vertices": 30600,
+    "elevation_spikes_corrected": 0,
+    "elevation_spike_indices": [],
+    "original_ascent_m": 4066.0,
+    "cleaned_ascent_m": 4066.0
+  },
+  "cp_candidates": [
+    {
+      "id": "wpt:1",
+      "name": "CP1上凡村",
+      "type": "",
+      "lat": 28.28337046,
+      "lon": 121.2985146,
+      "recognized": true,
+      "projection_options": [
+        {
+          "distance_m": 10449.623339263935,
+          "offset_m": 1.311104466385508
+        }
+      ]
+    },
+    {
+      "id": "wpt:2",
+      "name": "CP2大雷头村",
+      "type": "",
+      "lat": 28.31828917,
+      "lon": 121.35225534,
+      "recognized": true,
+      "projection_options": [
+        {
+          "distance_m": 19002.131223500808,
+          "offset_m": 2.90271473048842
+        }
+      ]
+    },
+    {
+      "id": "wpt:3",
+      "name": "CP3岳鑫村",
+      "type": "",
+      "lat": 28.25386278,
+      "lon": 121.34995103,
+      "recognized": true,
+      "projection_options": [
+        {
+          "distance_m": 31216.352370771063,
+          "offset_m": 0.6431158033588122
+        }
+      ]
+    },
+    {
+      "id": "wpt:4",
+      "name": "CP4水桶岙村",
+      "type": "",
+      "lat": 28.22864823,
+      "lon": 121.36289329,
+      "recognized": true,
+      "projection_options": [
+        {
+          "distance_m": 37342.5599190171,
+          "offset_m": 24.947841887846216
+        }
+      ]
+    },
+    {
+      "id": "wpt:5",
+      "name": "CP10龟山道院",
+      "type": "",
+      "lat": 28.21504811,
+      "lon": 121.29856261,
+      "recognized": true,
+      "projection_options": [
+        {
+          "distance_m": 47768.57075906329,
+          "offset_m": 41.613702595854605
+        },
+        {
+          "distance_m": 47890.8928489299,
+          "offset_m": 27.820101055401604
+        }
+      ]
+    },
+    {
+      "id": "wpt:6",
+      "name": "起终点-奥体中心",
+      "type": "",
+      "lat": 28.23735362,
+      "lon": 121.25799179,
+      "recognized": true,
+      "projection_options": [
+        {
+          "distance_m": 0.0,
+          "offset_m": 23.746734101618113
+        },
+        {
+          "distance_m": 55307.65836963937,
+          "offset_m": 27.357815892404215
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "Sparse GPX: maximum original point spacing is 297.4 m; interpolation adds no measurement detail.",
+    "Distance sensitivity: 5 m simplification would reduce 55307.7 to 54337.9 m. This may be drift OR real turns; distance is unchanged."
+  ]
+}

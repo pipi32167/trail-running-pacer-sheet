@@ -1,0 +1,7 @@
+{
+  "name": "且听风吟60K",
+  "target": "12:00",
+  "checkpoint_overrides": {
+    "wpt:5": {"distance_km": 47.76857075906329}
+  }
+}

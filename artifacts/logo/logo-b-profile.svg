@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="山野有数">
+  <path d="M16.00 5.00Q32.00 5.45 48.00 5.00Q59.00 5.00 59.00 16.00Q59.18 32.00 59.00 48.00Q59.00 59.00 48.00 59.00Q32.00 58.85 16.00 59.00Q5.00 59.00 5.00 48.00Q4.92 32.00 5.00 16.00Q5.00 5.00 16.00 5.00Z" fill="#fbf7ef" stroke="#23201c" stroke-width="2.3"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 46L19 37L25 40L32 24L38 31L46 17L53 45L53 50L11 50Z" fill="#2a4d9b" opacity=".10" stroke="none"/>
+    <path d="M11 46L19 37L25 40L32 24L38 31L46 17L53 45" stroke="#23201c" stroke-width="2.7"/>
+    <g stroke="#2a4d9b" stroke-width="1.8"><path d="M14.0 50.5v2.6"/><path d="M21.5 50.5v2.6"/><path d="M29.0 50.5v2.6"/><path d="M36.5 50.5v2.6"/><path d="M44.0 50.5v2.6"/><path d="M51.0 50.5v2.6"/></g>
+    <circle cx="46" cy="17" r="3.1" fill="#e0533c" stroke="none"/>
+  </g>
+</svg>

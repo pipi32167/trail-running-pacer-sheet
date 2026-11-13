@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "skills": {
+    "even-effort-pace-chart": {
+      "source": "clawhub.ai",
+      "sourceUrl": "https://clawhub.ai/yihouzenmeban/skills/even-effort-pace-chart",
+      "sourceType": "well-known",
+      "computedHash": "c48b19ac8149cd1063916dbcce872bbc6e3be683f4c1dc99613fae41f0ea829c",
+      "wellKnownDigest": "sha256:b5d343e981e97bc3a34429536d5cc2a470a9950638df8c7b02fd83a7db18baf7"
+    }
+  }
+}

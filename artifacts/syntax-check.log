@@ -1,0 +1,2 @@
+python3 -m compileall -q app.py tests
+node --check web/app.js

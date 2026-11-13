@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;padding:32px 40px;background:#fbf7ef;color:#23201c;font:13px/1.6 ui-sans-serif,-apple-system,"PingFang SC",sans-serif}
+h1{font:600 20px/1.3 Georgia,serif;margin:0 0 22px}
+.row{display:flex;align-items:flex-end;gap:30px;background:#fff;border:2px solid #23201c;border-radius:10px;padding:18px 22px;margin-bottom:16px;box-shadow:3px 3px 0 rgba(35,32,28,.7)}
+.lbl{font:11px ui-monospace,Menlo,monospace;color:#5e594f;width:96px;padding-bottom:20px}
+figure{margin:0;text-align:center}figcaption{font:9px ui-monospace,Menlo,monospace;color:#5e594f;margin-top:5px}
+.px{image-rendering:pixelated}
+</style></head><body><h1>C 方向细化 · 红点三种处理（16 / 32 / 36 / 128）</h1>
+<div class="row"><span class="lbl">X 顶点红帽</span><figure><img src="c-cap-16.png" width="16" height="16"><figcaption>16</figcaption></figure><figure><img src="c-cap-32.png" width="32" height="32"><figcaption>32</figcaption></figure><figure><img src="c-cap-36.png" width="36" height="36"><figcaption>36</figcaption></figure><figure><img src="c-cap-128.png" width="128" height="128"><figcaption>128</figcaption></figure></div><div class="row"><span class="lbl">Y 无红点</span><figure><img src="c-none-16.png" width="16" height="16"><figcaption>16</figcaption></figure><figure><img src="c-none-32.png" width="32" height="32"><figcaption>32</figcaption></figure><figure><img src="c-none-36.png" width="36" height="36"><figcaption>36</figcaption></figure><figure><img src="c-none-128.png" width="128" height="128"><figcaption>128</figcaption></figure></div><div class="row"><span class="lbl">Z 悬浮红点</span><figure><img src="c-float-16.png" width="16" height="16"><figcaption>16</figcaption></figure><figure><img src="c-float-32.png" width="32" height="32"><figcaption>32</figcaption></figure><figure><img src="c-float-36.png" width="36" height="36"><figcaption>36</figcaption></figure><figure><img src="c-float-128.png" width="128" height="128"><figcaption>128</figcaption></figure></div>
+<div class="row"><span class="lbl">16px 放大</span>
+<figure><img class="px" src="c-cap-16.png" width="160" height="160"><figcaption>X</figcaption></figure>
+<figure><img class="px" src="c-none-16.png" width="160" height="160"><figcaption>Y</figcaption></figure>
+<figure><img class="px" src="c-float-16.png" width="160" height="160"><figcaption>Z</figcaption></figure>
+</div></body></html>

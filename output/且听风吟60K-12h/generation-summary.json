@@ -1,0 +1,140 @@
+{
+  "outputs": [
+    "/Volumes/WD_BLACK_2T/work/million/trail-running/output/且听风吟60K-12h/pace-chart.svg"
+  ],
+  "warnings": [
+    "Sparse GPX: maximum original point spacing is 297.4 m; interpolation adds no measurement detail.",
+    "Distance sensitivity: 5 m simplification would reduce 55307.7 to 54337.9 m. This may be drift OR real turns; distance is unchanged.",
+    "wpt:5: confirmed position override at 47.769 route km.",
+    "部分或全部站点未提供关门时间，未校核这些站点。",
+    "模型未计入技术路面、陡下坡额外负担、天气和个人肌力差异；请结合赛事规程判断。",
+    "水量仅供比较赛段差异，并非个人饮水建议。",
+    "插值不增加原始测量精度；爬升统计依赖海拔数据、过滤方法与阈值。"
+  ],
+  "summary": {
+    "parameters": {
+      "sample_m": 5.0,
+      "smoothing_m": 20.0,
+      "ascent_smoothing_m": 0.0,
+      "ascent_threshold_m": 10.0,
+      "elevation_spike_m": 30.0,
+      "distance_tolerance_m": 0.0,
+      "ascent_km_per_100m": 1.0,
+      "fatigue_rate": 0.08,
+      "water_ml_per_10km": 700.0,
+      "target_step_minutes": 30.0,
+      "output_formats": [
+        "svg"
+      ],
+      "ascent_method": "hysteresis",
+      "pace_basis": "distance",
+      "secondary_display": "pace",
+      "start_time": "06:00",
+      "fatigue_exponent": 1.1110313123887439,
+      "rest_total_seconds": 0.0
+    },
+    "target_source": "target",
+    "targets_seconds": [
+      39600.0,
+      41400.0,
+      43200.0,
+      45000.0,
+      46800.0
+    ],
+    "route": {
+      "distance_m": 55307.65836963937,
+      "distance_scale": 1.0,
+      "ascent_m": 2732.0,
+      "descent_m": 2731.0,
+      "eq_distance_km": 82.62765836963938,
+      "original_points": 30600,
+      "sampled_points": 11063,
+      "diagnostics": {
+        "quality_flagged_points": 0,
+        "quality_metadata_points": 0,
+        "invalid_quality_fields": 0,
+        "source_points": 30653,
+        "original_distance_m": 55307.65836963937,
+        "processed_distance_m": 55307.65836963937,
+        "distance_removed_m": 0.0,
+        "spacing_min_m": 0.09789645037380978,
+        "spacing_median_m": 1.2508379574865103,
+        "spacing_max_m": 297.3728092723759,
+        "distance_trial_tolerance_m": 5.0,
+        "distance_trial_m": 54337.91567652155,
+        "geometry_vertices": 30600,
+        "elevation_spikes_corrected": 0,
+        "elevation_spike_indices": [],
+        "original_ascent_m": 4066.0,
+        "cleaned_ascent_m": 4066.0
+      },
+      "grade_fractions": [
+        0.13452024944314256,
+        0.059847046459247565,
+        0.10278865834465933,
+        0.4394085572601297,
+        0.0675313349019002,
+        0.04954105960674874,
+        0.1463630939841719
+      ]
+    },
+    "checkpoints": [
+      {
+        "id": "wpt:6:start",
+        "name": "起终点-奥体中心（起点）",
+        "distance_m": 0.0,
+        "rest_seconds": 0.0,
+        "cutoff_seconds": null
+      },
+      {
+        "id": "wpt:1",
+        "name": "CP1上凡村",
+        "distance_m": 10449.623339263935,
+        "rest_seconds": 0.0,
+        "cutoff_seconds": null
+      },
+      {
+        "id": "wpt:2",
+        "name": "CP2大雷头村",
+        "distance_m": 19002.131223500808,
+        "rest_seconds": 0.0,
+        "cutoff_seconds": null
+      },
+      {
+        "id": "wpt:3",
+        "name": "CP3岳鑫村",
+        "distance_m": 31216.352370771063,
+        "rest_seconds": 0.0,
+        "cutoff_seconds": null
+      },
+      {
+        "id": "wpt:4",
+        "name": "CP4水桶岙村",
+        "distance_m": 37342.5599190171,
+        "rest_seconds": 0.0,
+        "cutoff_seconds": null
+      },
+      {
+        "id": "wpt:5",
+        "name": "CP10龟山道院",
+        "distance_m": 47768.57075906329,
+        "rest_seconds": 0.0,
+        "cutoff_seconds": null
+      },
+      {
+        "id": "wpt:6:finish",
+        "name": "起终点-奥体中心（终点）",
+        "distance_m": 55307.65836963937,
+        "rest_seconds": 0.0,
+        "cutoff_seconds": null
+      }
+    ],
+    "verification": {
+      "finish_targets_match": true,
+      "rests_match": true,
+      "cutoff_checked_stations": 0,
+      "cutoff_unchecked_stations": 6,
+      "cutoff_failures": []
+    }
+  }
+}
