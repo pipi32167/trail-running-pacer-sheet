@@ -53,13 +53,24 @@ make serve
 
 部署目录为 `web/`，无需构建或安装依赖。发布时只上传静态目录，不上传 GPX、历史结果和凭据。
 
-Cloudflare Pages 的部署命令如下。执行前配置具有目标账户 Pages 编辑权限的 `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID`。
+Cloudflare Pages 已连接 GitHub 仓库 `pipi32167/trail-running-pacer-sheet`。推送后自动部署，无需本地上传或 GitHub Actions。
+
+| 分支 | 环境 | 地址 |
+| --- | --- | --- |
+| `main` | 正式站 | <https://trail-running-pacer-sheet.million-ai.com> |
+| `dev` | 开发站 | <https://dev.trail-running-pacer-sheet.pages.dev> |
+
+生产分支为 `main`。预览分支仅包含 `dev`。构建命令留空，输出目录为 `web`，根目录为仓库根目录。正式站还支持 <https://trail-running-pacer-sheet.pages.dev>。
+
+日常开发推送到 `dev`。确认开发站后，将改动合并到 `main`，Cloudflare 自动发布正式站。在 Cloudflare Pages 的「Deployments」页面查看提交、部署状态和历史版本。
+
+手动部署仅用于应急。执行前配置具有目标账户 Pages 编辑权限的 `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID`。使用 `--branch dev` 发布开发站，使用 `--branch main` 发布正式站。
 
 ```bash
-npx wrangler@4 pages deploy web --project-name trail-running-pacer-sheet
+npx wrangler@4 pages deploy web --project-name trail-running-pacer-sheet --branch dev
 ```
 
-当前域名为 <https://trail-running-pacer-sheet.million-ai.com>，已绑定 Cloudflare Pages。项目地址为 <https://trail-running-pacer-sheet.pages.dev>。域名 CNAME 指向 `trail-running-pacer-sheet.pages.dev`。
+正式域名已绑定 Cloudflare Pages，CNAME 指向 `trail-running-pacer-sheet.pages.dev`。
 
 Mac 上的旧静态服务已停止，并关闭自动启动。线上访问不再依赖 Mac 或 Tunnel。
 
