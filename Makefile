@@ -5,7 +5,7 @@ serve:
 
 test:
 	python3 -m unittest discover -s tests -v
-	node --test tests/pace-engine.test.cjs tests/pace-time.test.cjs tests/service-worker.test.cjs
+	node --test tests/pace-engine.test.cjs tests/pace-time.test.cjs tests/pace-wallpaper.test.cjs tests/pace-svg.test.cjs tests/service-worker.test.cjs
 
 check:
 	python3 -m compileall -q app.py tests
@@ -13,5 +13,6 @@ check:
 	node --check web/pace-engine.js
 	node --check web/pace-time.js
 	node --check web/pace-svg.js
+	node --check web/pace-wallpaper.js
 	node --check web/pace-worker.js
 	node --check web/service-worker.js

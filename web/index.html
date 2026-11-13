@@ -10,9 +10,10 @@
   <link rel="icon" href="./favicon-32.png" sizes="32x32" type="image/png">
   <link rel="icon" href="./favicon-16.png" sizes="16x16" type="image/png">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-  <link rel="stylesheet" href="./style.css?v=frontend-v8">
-  <script src="./pace-time.js?v=frontend-v8" defer></script>
-  <script src="./app.js?v=frontend-v8" defer></script>
+  <link rel="stylesheet" href="./style.css?v=frontend-v20">
+  <script src="./pace-time.js?v=frontend-v20" defer></script>
+  <script src="./pace-wallpaper.js?v=frontend-v20" defer></script>
+  <script src="./app.js?v=frontend-v20" defer></script>
 </head>
 <body>
   <div class="page-shell">
@@ -100,12 +101,33 @@
       <div class="under-form"><span><span class="blue-dot"></span> 体感一致 · 随地形调整配速</span><span>每一段山路，都值得好好计划。</span></div>
 
       <section id="results" class="results" hidden aria-labelledby="result-title">
-        <div class="result-heading"><div><p class="eyebrow">YOUR TRAIL PLAN / 配速计划</p><h2 id="result-title">你的山野节奏</h2></div><div class="exports" aria-label="下载配速表"><button type="button" data-export="svg" class="button button-small">SVG</button><button type="button" data-export="png" class="button button-small">PNG</button><button type="button" data-export="csv" class="button button-small">CSV</button><button id="print" type="button" class="button button-small">打印</button></div></div>
+        <div class="result-heading"><div><p class="eyebrow">YOUR TRAIL PLAN / 配速计划</p><h2 id="result-title">你的山野节奏</h2></div><div class="exports" aria-label="下载配速表"><button type="button" data-export="svg" class="button button-small">SVG</button><button type="button" data-export="png" class="button button-small">PNG</button><button type="button" data-export="csv" class="button button-small">CSV</button><button id="wallpaper-open" type="button" class="button button-small" aria-expanded="false" aria-controls="wallpaper-panel">壁纸</button><button id="print" type="button" class="button button-small">打印</button></div></div>
         <div id="route-stats" class="route-stats"></div>
         <div class="profile-paper"><div class="profile-heading"><span>沿途的起伏</span><span>高程轮廓 · 100 m 平滑，仅作路线示意</span></div><svg id="elevation-chart" viewBox="0 0 1080 180" role="img" aria-label="路线高程曲线"></svg></div>
         <div id="result-notes" class="result-notes"></div>
         <div class="table-paper"><div class="table-topline"><span>CHECKPOINT NOTES</span><span id="table-legend"></span><span class="mobile-table-hint">左右滑动查看全部方案 →</span></div><div class="table-scroll" tabindex="0" role="region" aria-label="配速表，可横向滚动"><table id="pace-table"></table></div></div>
         <details class="calculation-notes"><summary>计算说明与路线提示</summary><div id="calculation-detail"></div></details>
+        <section id="wallpaper-panel" class="wallpaper-panel" hidden aria-labelledby="wallpaper-title">
+          <div class="wallpaper-heading"><div><p class="eyebrow">HOME SCREEN / 手机壁纸</p><h3 id="wallpaper-title">把配速表放进手机</h3></div><p>按原版表格等比缩小，上下补留白，保留全部站点与方案。</p></div>
+          <div class="wallpaper-body">
+            <div class="wallpaper-stage"><div id="wallpaper-frame" class="wallpaper-frame"><div id="wallpaper-preview" class="wallpaper-preview"></div><div id="wallpaper-mask" class="wallpaper-mask" hidden></div></div></div>
+            <div class="wallpaper-side">
+              <div class="wallpaper-controls">
+                <label>机型<select id="wallpaper-device"></select></label>
+                <label>版式<select id="wallpaper-rotation"><option value="90">横版 · 表格旋转 90°，占满屏宽</option><option value="0">竖版 · 表格保持正向</option></select></label>
+                <label>顶部留白 %<input id="wallpaper-top" type="number" min="0" max="70" value="27"></label>
+                <label>底部留白 %<input id="wallpaper-bottom" type="number" min="0" max="50" value="9"></label>
+                <label>底色<select id="wallpaper-theme"><option value="dark">深色</option><option value="light">浅色</option></select></label>
+                <label>宽度 px<input id="wallpaper-width" type="number" min="640" max="4096" step="1" value="1179" disabled></label>
+                <label>高度 px<input id="wallpaper-height" type="number" min="960" max="4096" step="1" value="2556" disabled></label>
+              </div>
+              <label class="wallpaper-toggle"><input type="checkbox" id="wallpaper-overlay" checked> 叠加锁屏遮挡预览</label>
+              <p id="wallpaper-error" role="alert" class="wallpaper-note" hidden></p>
+              <p id="wallpaper-note" class="wallpaper-note"></p>
+              <div class="wallpaper-actions"><button type="button" id="wallpaper-png" class="button button-primary">下载壁纸 PNG</button><button type="button" id="wallpaper-svg" class="button button-small">SVG</button></div>
+            </div>
+          </div>
+        </section>
       </section>
     </main>
     <footer class="site-footer"><span>山野有数 <span class="footer-cross">×</span> 每一步，都算数。</span><span>基于体感一致思路的独立实现</span></footer>

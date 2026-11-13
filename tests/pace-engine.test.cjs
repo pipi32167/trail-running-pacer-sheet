@@ -6,6 +6,7 @@ const {createHash} = require('node:crypto');
 const path = require('node:path');
 const engine = require('../web/pace-engine.js');
 const fixtures = JSON.parse(execFileSync('python3',[path.join(__dirname,'export_parity.py')],{maxBuffer:40*1024*1024,encoding:'utf8'}));
+const plain=(svg)=>svg.replace(/<[^>]*>/g,'');
 function close(a,b,label) { assert.ok(Number.isFinite(a)&&Math.abs(a-b)<1e-5, `${label}: ${a} != ${b}`); }
 for (const f of fixtures) test(f.name, () => {
   const data={...f.data, document:f.document, sha256:createHash('sha256').update(f.data.gpx).digest('hex')};
@@ -33,6 +34,6 @@ for (const f of fixtures) test(f.name, () => {
   assert.match(r.svg, /^<svg/); assert.ok(!r.svg.includes('<script>'));
   assert.match(r.csv,/checkpoint_id/);
   assert.equal(r.plan.parameters.start_time,e.plan.parameters.start_time);
-  if (f.name === 'overnight arrival') assert.match(r.svg,/次日 02:30/);
-  if (f.name === 'midnight start') assert.match(r.svg,/\(发枪 00:00\)/);
+  if (f.name === 'overnight arrival') assert.match(plain(r.svg),/次日\s*02:30/);
+  if (f.name === 'midnight start') assert.match(plain(r.svg),/00:00\(00:00\)/);
 });

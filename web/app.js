@@ -1,7 +1,7 @@
 'use strict';
 const documentURL = document.currentScript.src;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register(new URL('./service-worker.js?v=frontend-v8',documentURL)).then(()=>navigator.serviceWorker.ready).then(()=>{
+  navigator.serviceWorker.register(new URL('./service-worker.js?v=frontend-v20',documentURL)).then(()=>navigator.serviceWorker.ready).then(()=>{
     $('privacy-note').textContent='GPX 仅在浏览器内处理。页面已缓存，断网也能计算。';
   }).catch(()=>{});
 }
@@ -27,7 +27,7 @@ function busy() {
     }
   }
 }
-function clearResult() { if (state.result) status('设置已修改，点击“生成配速表”更新结果。'); state.result = null; $('results').hidden = true; }
+function clearResult() { if (state.result) status('设置已修改，点击“生成配速表”更新结果。'); state.result = null; $('results').hidden = true; $('wallpaper-panel').hidden = true; $('wallpaper-open').setAttribute('aria-expanded','false'); }
 function numeric(id) { const input = $(id); const v = input.value.trim(); if (!v || !input.checkValidity() || !Number.isFinite(Number(v))) throw new Error(`请检查“${input.closest('label').firstChild.textContent.trim()}”的数值。`); return Number(v); }
 function options(includeCP = false) {
   const startTime = $('start-time').value;
@@ -97,7 +97,7 @@ async function api(path, body, signal) {
   const sha256 = [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
   return new Promise((resolve,reject)=>{
     if(signal?.aborted) {const e=new Error('已取消旧路线的读取。');e.cancelled=true;reject(e);return;}
-    const worker = new Worker(new URL('./pace-worker.js?v=frontend-v8',documentURL));
+    const worker = new Worker(new URL('./pace-worker.js?v=frontend-v20',documentURL));
     const cleanup=()=>{clearTimeout(timer);signal?.removeEventListener('abort',abort);worker.terminate();};
     const abort=()=>{cleanup();const e=new Error('已取消旧路线的读取。');e.cancelled=true;reject(e);};
     const timer=setTimeout(()=>{cleanup();reject(new Error('处理超时，请精简 GPX 后重试，已选路线会保留。'));},45000);
@@ -189,11 +189,11 @@ function renderResult(response) {
   const p = response.plan, route = p.route, central = $('target').value.trim().split(':').map(Number); const target = central[0]*3600+central[1]*60+(central[2]||0);
   $('result-title').textContent = p.name;
   $('route-stats').innerHTML = [['路线距离',(route.distance_m/1000).toFixed(2),'km'],['累计爬升',Math.round(route.ascent_m),'m'],['累计下降',Math.round(route.descent_m),'m'],['等效距离',route.eq_distance_km.toFixed(2),'km']].map(([label,value,unit]) => `<div class="stat"><span class="stat-label">${label}</span><span class="stat-value">${value}<small>${unit}</small></span></div>`).join('');
-  const label = {pace:'区间配速（分:秒/km）',equivalent_pace:'区间等效配速（分:秒/km）',arrival_time:'到站钟点（当地时间）'}[p.parameters.secondary_display];
-  $('table-legend').textContent = `发枪 ${p.parameters.start_time} · 主数字：累计出站耗时 · 括号：${label}`;
-  $('pace-table').classList.toggle('clock-display',p.parameters.secondary_display==='arrival_time');
-  $('result-notes').innerHTML = `<p><strong>高程处理：</strong>${p.parameters.ascent_smoothing_m} m 窗口平滑 + ${p.parameters.ascent_threshold_m} m 峰谷反转阈值。${response.repair.repaired_count ? `已补齐 ${response.repair.repaired_count} 个缺失高程点，爬升为估计值。` : '高程未发现缺失。'}</p><p><strong>停站：</strong>共 ${Math.round(p.parameters.rest_total_seconds/60)} 分钟，已包含在完赛时间中。<strong>关门：</strong>${response.verification.cutoff_unchecked_stations ? `${response.verification.cutoff_unchecked_stations} 个站点未提供关门时间。` : '已按所填时间校核。'} 水量按等效距离比较，非个人饮水建议。</p><p><strong>读表：</strong>到站钟点 = 发枪时间 + 到站耗时。主数字为出站耗时，包含本站停留；终点的括号为完赛钟点。</p>`;
-  $('pace-table').innerHTML = `<thead><tr><th scope="col">站点 / 累计里程</th><th scope="col">分段距离<br>km</th><th scope="col">爬升 / 下降<br>m</th><th scope="col">下一段水量<br>ml · 比较值</th>${p.targets_seconds.map((t) => `<th scope="col" class="target-col ${Math.abs(t-target)<1?'chosen':''}">${Math.abs(t-target)<1?'目标方案':'参考方案'}<span class="target-label">${fmt(t)}</span></th>`).join('')}</tr></thead><tbody>${p.checkpoints.map((cp,i) => `<tr><td>${esc(cp.name)}<span class="station-km">${km(cp.distance_m)} km</span>${cp.cutoff_seconds!==null?`<span class="station-cutoff">关门 ${fmt(cp.cutoff_seconds)}</span>`:''}</td><td>${i ? km(cp.segment_distance_m) : '—'}</td><td>${i?`${Math.round(cp.ascent_m)} / ${Math.round(cp.descent_m)}`:'—'}</td><td>${Math.round(cp.water_ml)}</td>${p.schedules.map((s) => { const t = s.checkpoints[i]; const secondary = TrailTime.secondary(p.parameters.secondary_display,p.parameters.start_time,t,i,p.checkpoints.length-1); return `<td class="target-col ${Math.abs(s.target_seconds-target)<1?'chosen':''}"><span class="time-main">${fmt(t.departure_seconds)}</span>${secondary?`<span class="time-secondary">(${secondary})</span>`:''}${cp.rest_seconds>0?`<span class="arrival-line">到站耗时 ${fmt(t.arrival_seconds)}</span><span class="arrival-line">停留 ${cp.rest_seconds/60} 分</span>`:''}${t.cutoff_status.includes('late')?`<span class="late">${t.cutoff_status==='arrival_late'?'到站超时':'出站超时'}</span>`:''}</td>`; }).join('')}</tr>`).join('')}</tbody>`;
+  const label = {pace:'区间配速（分:秒/km）',equivalent_pace:'区间等效配速（分:秒/km）',arrival_time:'累计耗时'}[p.parameters.secondary_display];
+  $('table-legend').textContent = `发枪 ${p.parameters.start_time} · 主数字：到站钟点（当地时间） · 括号：${label}`;
+  $('pace-table').classList.add('clock-display');
+  $('result-notes').innerHTML = `<p><strong>高程处理：</strong>${p.parameters.ascent_smoothing_m} m 窗口平滑 + ${p.parameters.ascent_threshold_m} m 峰谷反转阈值。${response.repair.repaired_count ? `已补齐 ${response.repair.repaired_count} 个缺失高程点，爬升为估计值。` : '高程未发现缺失。'}</p><p><strong>停站：</strong>共 ${Math.round(p.parameters.rest_total_seconds/60)} 分钟，已包含在完赛时间中。<strong>关门：</strong>${response.verification.cutoff_unchecked_stations ? `${response.verification.cutoff_unchecked_stations} 个站点未提供关门时间。` : '已按所填时间校核。'} 水量按等效距离比较，非个人饮水建议。</p><p><strong>读表：</strong>主数字为到站钟点（当地时间），括号内为累计耗时。首行为发枪时间，末行为完赛钟点。有停留的站点另列出站钟点。</p>`;
+  $('pace-table').innerHTML = `<thead><tr><th scope="col">站点 / 累计里程</th><th scope="col">分段距离<br>km</th><th scope="col">爬升 / 下降<br>m</th><th scope="col">下一段水量<br>ml · 比较值</th>${p.targets_seconds.map((t) => `<th scope="col" class="target-col ${Math.abs(t-target)<1?'chosen':''}">${Math.abs(t-target)<1?'目标方案':'参考方案'}<span class="target-label">${fmt(t)}</span></th>`).join('')}</tr></thead><tbody>${p.checkpoints.map((cp,i) => `<tr><td>${esc(cp.name)}<span class="station-km">${km(cp.distance_m)} km</span>${cp.cutoff_seconds!==null?`<span class="station-cutoff">关门 ${fmt(cp.cutoff_seconds)}</span>`:''}</td><td>${i ? km(cp.segment_distance_m) : '—'}</td><td>${i?`${Math.round(cp.ascent_m)} / ${Math.round(cp.descent_m)}`:'—'}</td><td>${Math.round(cp.water_ml)}</td>${p.schedules.map((s) => { const t = s.checkpoints[i]; const secondary = p.parameters.secondary_display==='arrival_time' ? `(${fmt(t.arrival_seconds)})` : TrailTime.secondary(p.parameters.secondary_display,p.parameters.start_time,t,i,p.checkpoints.length-1); const clock = TrailTime.clock(p.parameters.start_time,t.arrival_seconds); return `<td class="target-col ${Math.abs(s.target_seconds-target)<1?'chosen':''}"><span class="time-main">${clock}</span>${secondary?`<span class="time-secondary">${secondary}</span>`:''}${cp.rest_seconds>0?`<span class="arrival-line">停留 ${cp.rest_seconds/60} 分</span><span class="arrival-line">出站 ${TrailTime.clock(p.parameters.start_time,t.departure_seconds)}</span>`:''}${t.cutoff_status.includes('late')?`<span class="late">${t.cutoff_status==='arrival_late'?'到站超时':'出站超时'}</span>`:''}</td>`; }).join('')}</tr>`).join('')}</tbody>`;
   const diagnostics = route.diagnostics;
   const warnings = [
     `爬升系数：每爬升 100 m 增加 ${p.parameters.ascent_km_per_100m} 等效 km；距离翻倍的平均配速增幅：${(p.parameters.fatigue_rate*100).toFixed(1)}%。`,
@@ -233,7 +233,8 @@ for (const event of ['dragleave','drop']) $('drop-zone').addEventListener(event,
 $('drop-zone').addEventListener('drop', (e) => acceptFile(e.dataTransfer.files[0]));
 $('track-index').addEventListener('change', () => {clearResult();state.inspection=null;inspectFile();});
 $('pace-form').addEventListener('input', (e) => {if (e.target.id==='gpx-file') return;clearResult(); if ($('target-count').value==='one') $('target-note').textContent='仅生成目标方案'; else $('target-note').textContent=`五档参考方案 · 相邻间隔 ${$('target-step').value || '—'} 分钟`;});
-function save(blob, suffix) { const a = document.createElement('a'), url = URL.createObjectURL(blob); a.href=url; a.download=`${state.result.plan.name}-配速表.${suffix}`; document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); }
+function saveFile(blob, filename) { const a = document.createElement('a'), url = URL.createObjectURL(blob); a.href=url; a.download=filename; document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); }
+function save(blob, suffix) { saveFile(blob, `${state.result.plan.name}-配速表.${suffix}`); }
 for (const btn of document.querySelectorAll('[data-export]')) btn.addEventListener('click', async () => {
   if (!state.result) return;
   const format = btn.dataset.export;
@@ -255,3 +256,78 @@ for (const btn of document.querySelectorAll('[data-export]')) btn.addEventListen
   } catch(e) {status(e.message || '下载未完成，请重试。','error');}
 });
 $('print').addEventListener('click',()=>window.print());
+
+/* ---- 手机壁纸导出 ---- */
+const WALL = TrailWallpaper;
+for (const [key, device] of Object.entries(WALL.DEVICES)) {
+  const option = document.createElement('option');
+  option.value = key; option.textContent = key === 'custom' ? device.label : `${device.label} ${device.width}×${device.height}`;
+  $('wallpaper-device').append(option);
+}
+$('wallpaper-device').value = 'iphone-61';
+function wallpaperOptions() {
+  const device = $('wallpaper-device').value;
+  const options = {device, rotation:Number($('wallpaper-rotation').value), top:$('wallpaper-top').value, bottom:$('wallpaper-bottom').value, anchor:Number($('wallpaper-rotation').value)?'top':'center', theme:$('wallpaper-theme').value};
+  if (device === 'custom') { options.width = $('wallpaper-width').value; options.height = $('wallpaper-height').value; }
+  return options;
+}
+function drawWallpaper() {
+  if (!state.result) return;
+  const options = wallpaperOptions();
+  try {
+    const layout = WALL.layout(state.result.svg, options);
+    $('wallpaper-preview').innerHTML = WALL.render(state.result.svg, options);
+    const overlay = $('wallpaper-overlay').checked;
+    $('wallpaper-mask').hidden = !overlay;
+    $('wallpaper-mask').innerHTML = overlay ? WALL.maskOverlay(layout) : '';
+    $('wallpaper-error').hidden = true;
+    $('wallpaper-png').disabled = false; $('wallpaper-svg').disabled = false;
+    if (options.device !== 'custom') {
+      $('wallpaper-width').value = layout.width; $('wallpaper-height').value = layout.height;
+    }
+    $('wallpaper-width').disabled = options.device !== 'custom';
+    $('wallpaper-height').disabled = options.device !== 'custom';
+    const board = options.rotation ? '横版' : '竖版';
+    const share = Math.round(layout.image.height / layout.height * 100);
+    const other = Math.round(WALL.layout(state.result.svg, {...options, rotation: options.rotation ? 0 : 90}).image.height / layout.height * 100);
+    const tip = !options.rotation && share + 10 < other
+      ? `竖版受屏宽限制，表格只占屏高 ${share}%；切横版可占 ${other}%。`
+      : `表格占屏高 ${share}%。`;
+    $('wallpaper-note').textContent = `${board} · ${layout.width} × ${layout.height} px。${tip}保留原表全部内容，预览叠层不会导出。展开的通知仍可能遮挡表格；可收起通知或增加底部留白。`;
+  } catch (error) {
+    $('wallpaper-error').hidden = false; $('wallpaper-error').textContent = error.message;
+    $('wallpaper-preview').innerHTML = ''; $('wallpaper-mask').innerHTML = '';
+    $('wallpaper-png').disabled = true; $('wallpaper-svg').disabled = true;
+  }
+}
+$('wallpaper-open').addEventListener('click', () => {
+  const panel = $('wallpaper-panel');
+  panel.hidden = !panel.hidden;
+  $('wallpaper-open').setAttribute('aria-expanded', String(!panel.hidden));
+  if (!panel.hidden) { drawWallpaper(); panel.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'}); }
+});
+for (const id of ['wallpaper-device','wallpaper-rotation','wallpaper-top','wallpaper-bottom','wallpaper-theme','wallpaper-width','wallpaper-height','wallpaper-overlay']) $(id).addEventListener('input', drawWallpaper);
+for (const type of ['wallpaper-png','wallpaper-svg']) $(type).addEventListener('click', async () => {
+  if (!state.result) return;
+  const btn = $(type), original = btn.textContent;
+  const options = wallpaperOptions();
+  const result = state.result;
+  try {
+    btn.disabled = true; btn.textContent = '导出中…';
+    const svg = WALL.render(result.svg, options);
+    const suffix = `${options.device}-${options.rotation ? '横版' : '竖版'}`;
+    if (type === 'wallpaper-svg') return saveFile(new Blob([svg], {type:'image/svg+xml;charset=utf-8'}), `${result.plan.name}-壁纸-${suffix}.svg`);
+    const layout = WALL.layout(result.svg, options);
+    const url = URL.createObjectURL(new Blob([svg], {type:'image/svg+xml;charset=utf-8'}));
+    try {
+      const image = new Image(); image.src = url; await image.decode();
+      const canvas = document.createElement('canvas'); canvas.width = layout.width; canvas.height = layout.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, 0, 0, layout.width, layout.height);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('PNG 导出未完成，请改用 SVG 下载。');
+      saveFile(blob, `${result.plan.name}-壁纸-${suffix}.png`);
+    } finally { URL.revokeObjectURL(url); }
+  } catch (error) { $('wallpaper-error').hidden = false; $('wallpaper-error').textContent = error.message || '壁纸下载未完成，请重试。'; }
+  finally { btn.disabled = false; btn.textContent = original; }
+});
