@@ -26,3 +26,30 @@ test('station rest does not shift the arrival clock to departure',()=>{
  assert.equal(timing.elapsed(t.departure_seconds),'02:05');
  assert.equal(timing.elapsed(t.arrival_seconds),'02:00');
 });
+
+test('完赛时间只按数字输入，冒号自动补，不依赖键盘冒号键',()=>{
+ const t=require('../web/pace-time.js');
+ assert.equal(t.maskDuration('1200'),'12:00');
+ assert.equal(t.maskDuration('12'),'12');
+ assert.equal(t.maskDuration('130'),'13:0');
+ assert.equal(t.maskDuration('845'),'8:45');
+ assert.equal(t.maskDuration('12:00'),'12:00');
+ assert.equal(t.maskDuration(''),'');
+ assert.equal(t.maskDuration('ab1cd2'),'12');
+ assert.equal(t.maskDuration('123456'),'12:34');
+ assert.equal(t.maskDuration('3000'),'30:00');
+ assert.equal(t.maskDuration('120'),'12:0');
+ assert.equal(t.maskDuration('845'),'8:45');
+ assert.equal(t.maskDuration('12:0'),'12:0');
+});
+test('失焦补零成 HH:MM，非法输入返回空串',()=>{
+ const t=require('../web/pace-time.js');
+ assert.equal(t.normalizeDuration('9'),'09:00');
+ assert.equal(t.normalizeDuration('845'),'08:45');
+ assert.equal(t.normalizeDuration('123'),'01:23');
+ assert.equal(t.normalizeDuration('1230'),'12:30');
+ assert.equal(t.normalizeDuration('3000'),'30:00');
+ assert.equal(t.normalizeDuration('12:00'),'12:00');
+ assert.equal(t.normalizeDuration(''),'');
+ assert.equal(t.normalizeDuration('abc'),'');
+});

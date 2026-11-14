@@ -1,7 +1,7 @@
 'use strict';
 const documentURL = document.currentScript.src;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register(new URL('./service-worker.js?v=frontend-v24',documentURL)).then(()=>navigator.serviceWorker.ready).then(()=>{
+  navigator.serviceWorker.register(new URL('./service-worker.js?v=frontend-v27',documentURL)).then(()=>navigator.serviceWorker.ready).then(()=>{
     $('privacy-note').textContent='GPX 仅在浏览器内处理。页面已缓存，断网也能计算。';
   }).catch(()=>{});
 }
@@ -97,7 +97,7 @@ async function api(path, body, signal) {
   const sha256 = [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
   return new Promise((resolve,reject)=>{
     if(signal?.aborted) {const e=new Error('已取消旧路线的读取。');e.cancelled=true;reject(e);return;}
-    const worker = new Worker(new URL('./pace-worker.js?v=frontend-v24',documentURL));
+    const worker = new Worker(new URL('./pace-worker.js?v=frontend-v27',documentURL));
     const cleanup=()=>{clearTimeout(timer);signal?.removeEventListener('abort',abort);worker.terminate();};
     const abort=()=>{cleanup();const e=new Error('已取消旧路线的读取。');e.cancelled=true;reject(e);};
     const timer=setTimeout(()=>{cleanup();reject(new Error('处理超时，请精简 GPX 后重试，已选路线会保留。'));},45000);
@@ -210,6 +210,7 @@ function renderResult(response) {
 }
 $('pace-form').addEventListener('submit', async (event) => {
   event.preventDefault(); if (state.generating || state.inspecting) return;
+  $('target').value = TrailTime.normalizeDuration($('target').value);
   if (!state.file || !state.text) { status('先选择你的 GPX 路线文件。','error'); $('drop-zone').focus(); return; }
   if (!/^\d{1,4}:[0-5]\d(?::[0-5]\d)?$/.test($('target').value.trim()) || /^0+:00(?::00)?$/.test($('target').value.trim())) { status('完赛时间使用 H:MM 格式，例如 12:00。时间必须大于 0。','error'); $('target').focus(); return; }
   let settings;
@@ -233,6 +234,13 @@ for (const event of ['dragenter','dragover']) $('drop-zone').addEventListener(ev
 for (const event of ['dragleave','drop']) $('drop-zone').addEventListener(event, (e) => {e.preventDefault();$('drop-zone').classList.remove('dragover');});
 $('drop-zone').addEventListener('drop', (e) => acceptFile(e.dataTransfer.files[0]));
 $('track-index').addEventListener('change', () => {clearResult();state.inspection=null;inspectFile();});
+$('target').addEventListener('input', (event) => {
+  const masked = TrailTime.maskDuration(event.target.value);
+  if (masked !== event.target.value) event.target.value = masked;
+});
+$('target').addEventListener('blur', (event) => {
+  event.target.value = TrailTime.normalizeDuration(event.target.value);
+});
 $('pace-form').addEventListener('input', (e) => {if (e.target.id==='gpx-file') return;clearResult(); if ($('target-count').value==='one') $('target-note').textContent='仅生成目标方案'; else $('target-note').textContent=`五档参考方案 · 相邻间隔 ${$('target-step').value || '—'} 分钟`;});
 function saveFile(blob, filename) { const a = document.createElement('a'), url = URL.createObjectURL(blob); a.href=url; a.download=filename; document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); }
 function save(blob, suffix) { saveFile(blob, `${state.result.plan.name}-配速表.${suffix}`); }
