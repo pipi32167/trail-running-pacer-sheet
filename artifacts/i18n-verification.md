@@ -15,6 +15,10 @@
 
 同一版式下品牌、标题、字段标签、提示和按钮全部切换；右上角语言切换显示选中态。
 
+英文标语已在第二轮改为押韵句：`The trail runs steep,` / `the rhythm you keep.`（韵脚 steep / keep），中文 `山路有起伏，奔跑有节奏。` 未改。320、390、768、1024、1280、1440 px 下两行均各占一行，无折行与溢出。
+
+<img src="rhyme-en-live.png" width="640" alt="线上英文首屏押韵标语">
+
 ## 结果表格中英对照
 
 <img src="i18n-final-zh-results.png" width="640" alt="中文结果表格">
