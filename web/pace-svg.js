@@ -1,6 +1,7 @@
 'use strict';
 /* SVG export follows the existing Python renderer, including terrain graphics. */
 (function(root){
+const i18n=typeof module!=='undefined'?require('./i18n.js'):root.TrailI18n;
 const timing=typeof module!=='undefined'?require('./pace-time.js'):root.TrailTime;
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* Column widths: the name and target columns stay narrow so the table fills a phone screen after rotation. */
@@ -32,27 +33,30 @@ function wrapPx(value,maxWidth,size){
 }
 function text(x,y,lines,size=12,color='#111111',anchor='start',underline=false){return `<text x="${x}" y="${y}" fill="${color}" font-size="${size}" text-anchor="${anchor}" font-family="sans-serif"${underline?' text-decoration="underline"':''}>${lines.map((s,i)=>`<tspan x="${x}" dy="${i?size*1.45:0}">${esc(s)}</tspan>`).join('')}</text>`;}
 function time(s,seconds=false){let total=Math.floor(s+.5);if(!seconds)total=Math.floor(s/60+1e-9)*60;return `${String(Math.floor(total/3600)).padStart(2,'0')}:${String(Math.floor(total%3600/60)).padStart(2,'0')}${seconds?`:${String(total%60).padStart(2,'0')}`:''}`;}
-function histogram(f,x,y,T){const labels=['≤-15%','-15~-10%','-10~-5%','-5~5%','5~10%','10~15%','≥15%'];return `<g transform="translate(${x} ${y})" role="img"><title>坡度按距离加权的七档分布</title>${f.map((v,i)=>`<rect x="${i*100/7+1}" y="${48-v*43}" width="${100/7-2}" height="${v*43}" fill="${i===3?T.histOn:T.hist}"><title>${esc(labels[i])}: ${(v*100).toFixed(1)}%</title></rect>`).join('')}</g>`;}
-function profile(points,x,y,T){let path='3,57 111,57';if(points.length>1){const left=points[0][0],right=points.at(-1)[0],low=points.reduce((v,p)=>Math.min(v,p[1]),Infinity),high=points.reduce((v,p)=>Math.max(v,p[1]),-Infinity);path=points.map(p=>`${3+(p[0]-left)/(right-left)*108},${58-(p[1]-low)/Math.max(high-low,1)*54}`).join(' ');}return `<g transform="translate(${x} ${y})" role="img"><title>分段海拔肖像，各段独立缩放</title><polyline points="${path}" fill="none" stroke="${T.line}" stroke-width="1.6"/></g>`;}
+function histogram(f,x,y,T,t){const labels=['≤-15%','-15~-10%','-10~-5%','-5~5%','5~10%','10~15%','≥15%'];return `<g transform="translate(${x} ${y})" role="img"><title>${esc(t('svg.gradeTitle'))}</title>${f.map((v,i)=>`<rect x="${i*100/7+1}" y="${48-v*43}" width="${100/7-2}" height="${v*43}" fill="${i===3?T.histOn:T.hist}"><title>${esc(labels[i])}: ${(v*100).toFixed(1)}%</title></rect>`).join('')}</g>`;}
+function profile(points,x,y,T,t){let path='3,57 111,57';if(points.length>1){const left=points[0][0],right=points.at(-1)[0],low=points.reduce((v,p)=>Math.min(v,p[1]),Infinity),high=points.reduce((v,p)=>Math.max(v,p[1]),-Infinity);path=points.map(p=>`${3+(p[0]-left)/(right-left)*108},${58-(p[1]-low)/Math.max(high-low,1)*54}`).join(' ');}return `<g transform="translate(${x} ${y})" role="img"><title>${esc(t('svg.profileTitle'))}</title><polyline points="${path}" fill="none" stroke="${T.line}" stroke-width="1.6"/></g>`;}
 
 function columns(plan){return [...BASE_WIDTHS,NAME_WIDTH,...(plan.schedules||[]).map(()=>TARGET_WIDTH)];}
-const SECOND_LEGEND={arrival_time:'下行：累计耗时（首行为发枪，末行为完赛）',pace:'下行：区间配速（分:秒/km）',equivalent_pace:'下行：区间等效配速（分:秒/km）'};
+function legendLines(mode,t){
+  const second={arrival_time:t('svg.legendElapsed'),pace:t('svg.legendPace'),equivalent_pace:t('svg.legendEqPace')}[mode]||t('svg.legendElapsed');
+  return [t('svg.legendTop'),second];
+}
 
 /* One target cell: 到站钟点 on top, secondary value below, optional rest notes. */
-function cell(t,index,lastIndex,plan){
+function cell(timing_value,index,lastIndex,plan,t,lang){
   const start=plan.parameters.start_time;
   const notes=[];
-  if(t.cutoff_status.includes('late'))notes.push(t.cutoff_status==='arrival_late'?'到站超时':'出站超时');
+  if(timing_value.cutoff_status.includes('late'))notes.push(timing_value.cutoff_status==='arrival_late'?t('result.lateArrival'):t('result.lateDeparture'));
   const mode=plan.parameters.secondary_display;
   const sub=mode==='arrival_time'
-    ? `(${time(t.arrival_seconds)})`
-    : (t.pace_seconds_per_km==null?'':`${mode==='equivalent_pace'?'等效配速':'配速'} ${timing.pace(t.pace_seconds_per_km)}/km`);
+    ? `(${time(timing_value.arrival_seconds)})`
+    : (timing_value.pace_seconds_per_km==null?'':`${mode==='equivalent_pace'?t('time.eqPace'):t('time.pace')} ${timing.pace(timing_value.pace_seconds_per_km)}/km`);
   const cp=plan.checkpoints[index];
   if(cp.rest_seconds){
-    notes.unshift(`出站 ${timing.clock(start,t.departure_seconds)}`);
-    notes.unshift(`停留 ${cp.rest_seconds/60} 分`);
+    notes.unshift(t('svg.leaveLine',{clock:timing.clock(start,timing_value.departure_seconds,lang)}));
+    notes.unshift(t('svg.stopLine',{minutes:cp.rest_seconds/60}));
   }
-  return {clock:timing.clock(start,t.arrival_seconds),sub,notes,late:t.cutoff_status.includes('late')};
+  return {clock:timing.clock(start,timing_value.arrival_seconds,lang),sub,notes,late:timing_value.cutoff_status.includes('late')};
 }
 
 function layoutCell(value,sizes,maxWidth,T){
@@ -65,26 +69,28 @@ function layoutCell(value,sizes,maxWidth,T){
 }
 
 function render(plan,options={}){
+const t=i18n.forLang(options.lang);
+const lang=options.lang;
 const T=STYLES[options.style]||STYLES.paper;
 const widths=columns(plan),width=widths.reduce((a,b)=>a+b,0)+2;
 const usable=TARGET_WIDTH-TARGET_PADDING;
 const schedules=plan.schedules;
-const cells=schedules.map((schedule)=>schedule.checkpoints.map((t,i)=>cell(t,i,plan.checkpoints.length-1,plan)));
+const cells=schedules.map((schedule)=>schedule.checkpoints.map((value,i)=>cell(value,i,plan.checkpoints.length-1,plan,t,lang)));
 const mainSize=MAIN_SIZES.find((size)=>cells.flat().every((value)=>value.clock.split(/\s+/).every((word)=>lineWidth(word,size)<=usable)))||MAIN_SIZES.at(-1);
 const sizes={main:mainSize,sub:Math.max(14,Math.round(mainSize*.78)),note:13};
 const laid=cells.map((column)=>column.map((value)=>layoutCell(value,sizes,usable,T)));
-const metadata=[`发枪：${plan.parameters.start_time}　时间均为比赛当地时间`,`水量（ml）：${plan.parameters.water_ml_per_10km} ml/10 等效公里，仅供赛段比较，非个人饮水建议`];
-const legend=['上行：到站钟点（当地时间）',SECOND_LEGEND[plan.parameters.secondary_display]||SECOND_LEGEND.arrival_time];
+const metadata=[t('svg.metadata',{time:plan.parameters.start_time}),t('svg.water',{water:plan.parameters.water_ml_per_10km})];
+const legend=legendLines(plan.parameters.secondary_display,t);
 const legendSize=Math.max(...metadata.map((line)=>lineWidth(line,23)))+Math.max(...legend.map((line)=>lineWidth(line,23)))+24>width?19:23;
 const parts=[`<rect width="${width}" height="100%" fill="${T.paper}"/>`,text(6,30,metadata,23,T.ink)];
 legend.forEach((line,i)=>parts.push(`<text x="${width-6}" y="${30+i*28}" fill="${T.sub}" font-size="${legendSize}" text-anchor="end" font-family="sans-serif">${esc(line)}</text>`));
-let y=84,x=1;const headers=[['累积','距离'],['坡度','分布'],['肖像图'],['距离'],['爬升'],['下降'],['水'],['位置'],...plan.targets_seconds.map(t=>['Target',t%1800===0?`${(t/3600).toFixed(1)} Hr`:time(t,true)])];
+let y=84,x=1;const headers=[[t('svg.headTotal'),t('svg.headTotalUnit')],[t('svg.headGrade'),t('svg.headGradeUnit')],[t('svg.headProfile')],[t('svg.headDistance')],[t('svg.headAscent')],[t('svg.headDescent')],[t('svg.headWater')],[t('svg.headPosition')],...plan.targets_seconds.map(value=>[t('svg.headTarget'),value%1800===0?`${(value/3600).toFixed(1)} Hr`:time(value,true)])];
 headers.forEach((h,i)=>{parts.push(`<rect x="${x}" y="${y}" width="${widths[i]}" height="84" fill="${T.head}" stroke="${T.rule}" stroke-width="1"/>`,text(x+widths[i]/2,y+(h.length>1?29:48),h,24,T.ink,'middle'));x+=widths[i];});y+=84;
 const heat={3:['segment_distance_m',T.heat[0],'distance'],4:['ascent_m',T.heat[1],'ascent'],5:['descent_m',T.heat[2],'descent'],6:['water_ml',T.heat[3],'water']};
 const limits=Object.fromEntries(Object.values(heat).map(([f])=>[f,Math.max(...plan.checkpoints.map(c=>c[f]))]));
 plan.checkpoints.forEach((cp,i)=>{
-let name=cp.name;for(const label of ['起点','终点'])if(name.endsWith(`（${label}）`)){name=name.slice(0,-4).replace(/起终点|起終點/g,label);break;}
-const details=[];if(cp.official_distance_km!==null)details.push(`官方 ${cp.official_distance_km.toFixed(2)} km`);if(cp.rest_seconds)details.push(`停留 ${cp.rest_seconds/60} min`);if(cp.cutoff_seconds!==null)details.push(`关门 ${time(cp.cutoff_seconds,true)}`);
+const name=i18n.checkpointName(cp,lang);
+const details=[];if(cp.official_distance_km!==null)details.push(t('svg.official',{km:cp.official_distance_km.toFixed(2)}));if(cp.rest_seconds)details.push(t('svg.stopLine',{minutes:cp.rest_seconds/60}));if(cp.cutoff_seconds!==null)details.push(t('svg.cutoffLine',{time:time(cp.cutoff_seconds,true)}));
 const names=wrapPx(name,NAME_WIDTH-NAME_PADDING*2,22),detailLines=details.flatMap(d=>wrapPx(d,NAME_WIDTH-NAME_PADDING*2,12));
 const nameHeight=names.length*22*1.45+detailLines.length*18,rowHeight=Math.max(94,nameHeight+26,...laid.map((column)=>column[i].height+22));
 const numbers={0:cp.distance_m?(cp.distance_m/1000).toFixed(2):'0',3:(cp.segment_distance_m/1000).toFixed(1),4:Math.round(cp.ascent_m),5:Math.round(cp.descent_m),6:Math.round(cp.water_ml)};
@@ -92,13 +98,13 @@ x=1;widths.forEach((w,col)=>{
 let fill=T.paper;if(heat[col]&&cp[heat[col][0]]){const [field,color]=heat[col],strength=.18+.72*cp[field]/limits[field];fill=mix(T.blend==='paper'?T.paper:'#ffffff',color,strength);}
 parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${rowHeight}" fill="${fill}" stroke="${T.rule}" stroke-width="1" data-column="${heat[col]?.[2]||`column-${col}`}"/>`);
 if(col in numbers)parts.push(text(x+w/2,y+rowHeight/2+8,[numbers[col]],24,T.ink,'middle'));
-else if(col===1)parts.push(histogram(cp.grade_fractions,x+10,y+rowHeight/2-15,T));
-else if(col===2)parts.push(profile(cp.profile,x+8,y+rowHeight/2-31,T));
+else if(col===1)parts.push(histogram(cp.grade_fractions,x+10,y+rowHeight/2-15,T,t));
+else if(col===2)parts.push(profile(cp.profile,x+8,y+rowHeight/2-31,T,t));
 else if(col===7){const nameY=y+(rowHeight-nameHeight)/2+23;parts.push(text(x+NAME_PADDING,nameY,names,22,T.name,'start',true));let detailY=nameY+(names.length-1)*22*1.45+28;detailLines.forEach(d=>{parts.push(text(x+NAME_PADDING,detailY,[d],12,T.detail));detailY+=18;});}
 else {const value=laid[col-8][i],top=y+(rowHeight-value.height)/2;let base=top+value.lines[0].size;value.lines.forEach((line,index)=>{if(index)base+=value.lines[index-1].size*1.45;parts.push(text(x+w/2,base,[line.text],line.size,line.fill,'middle'));});}
 x+=w;});y+=rowHeight;
 });
-return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${Math.round(y+1)}" viewBox="0 0 ${width} ${Math.round(y+1)}" role="img"><title>${esc(plan.name)} 体感一致配速表</title><desc>${esc(metadata.join('；'))}；${esc(legend.join('；'))}。</desc>${parts.join('')}</svg>\n`;
+return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${Math.round(y+1)}" viewBox="0 0 ${width} ${Math.round(y+1)}" role="img"><title>${esc(t('svg.title',{name:plan.name}))}</title><desc>${esc(metadata.join('；'))}；${esc(legend.join('；'))}。</desc>${parts.join('')}</svg>\n`;
 }
 root.TrailSVG={render,columns,cell,wrapPx,lineWidth,STYLES,mix};if(typeof module!=='undefined')module.exports=root.TrailSVG;
 })(globalThis);
