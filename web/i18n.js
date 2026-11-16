@@ -328,7 +328,7 @@
     'brand.home': 'Trail Notes home',
     'header.note': 'One route, one plan for the hills.',
     'lang.group': 'Language',
-    'lang.zh': '中文',
+    'lang.zh': 'ZH',
     'lang.en': 'EN',
 
     'hero.eyebrow': 'Sketch a plan for the next start line',
