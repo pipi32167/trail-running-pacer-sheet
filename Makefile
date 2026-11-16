@@ -5,10 +5,11 @@ serve:
 
 test:
 	python3 -m unittest discover -s tests -v
-	node --test tests/pace-engine.test.cjs tests/pace-time.test.cjs tests/pace-wallpaper.test.cjs tests/pace-svg.test.cjs tests/pace-svg-style.test.cjs tests/service-worker.test.cjs
+	node --test tests/i18n.test.cjs tests/pace-engine.test.cjs tests/pace-time.test.cjs tests/pace-wallpaper.test.cjs tests/pace-svg.test.cjs tests/pace-svg-style.test.cjs tests/service-worker.test.cjs
 
 check:
 	python3 -m compileall -q app.py tests
+	node --check web/i18n.js
 	node --check web/app.js
 	node --check web/pace-engine.js
 	node --check web/pace-time.js

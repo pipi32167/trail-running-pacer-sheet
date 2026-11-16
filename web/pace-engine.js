@@ -7,16 +7,17 @@
   const DEFAULTS = {sample_m:5, smoothing_m:20, ascent_smoothing_m:100, ascent_threshold_m:10,
     elevation_spike_m:30, distance_tolerance_m:0, ascent_km_per_100m:1, fatigue_rate:.08,
     water_ml_per_10km:700, target_step_minutes:30, start_time:'06:00', secondary_display:'pace'};
+  /* Errors carry a code and parameters; the page turns them into localized copy. */
   class InputError extends Error {
-    constructor(message, code='invalid_input', details=null) { super(message); this.code=code; this.details=details; }
+    constructor(code='invalid_input', params=null, details=null) { super(code); this.code=code; this.params=params; this.details=details; }
   }
-  const fail = (message, code, details) => { throw new InputError(message,code,details); };
+  const fail = (code, params=null, details=null) => { throw new InputError(code,params,details); };
   const children = (n,t) => n.children.filter(c=>c.tag===t);
   const text = (n,t) => children(n,t)[0]?.text || '';
   function descendants(n,t) { const result=[]; const visit=(p)=>{ if(t.includes(p.tag))result.push(p); p.children.forEach(visit); }; visit(n); return result; }
-  function numeric(value,label,min=0,max=Infinity) { if(typeof value!=='number'||!Number.isFinite(value)||value<min||value>max) fail(`${label} 超出允许范围。`); return value; }
+  function numeric(value,field,min=0,max=Infinity) { if(typeof value!=='number'||!Number.isFinite(value)||value<min||value>max) fail('option_range',{field,min,max}); return value; }
   function duration(value) {
-    if(typeof value!=='string'||!/^\d{1,4}:[0-5]\d(?::[0-5]\d)?$/.test(value)) fail('时间格式应为 H:MM，例如 12:00。');
+    if(typeof value!=='string'||!/^\d{1,4}:[0-5]\d(?::[0-5]\d)?$/.test(value)) fail('bad_time');
     const [h,m,s=0]=value.split(':').map(Number); return h*3600+m*60+s;
   }
   const delta = (a,b) => {const v=(b-a+180)%360;return (v<0?v+360:v)-180;};
@@ -27,22 +28,22 @@
   function coords(n) {
     const lat=n.attrs.lat?.trim(),lon=n.attrs.lon?.trim();
     const a=Number(lat),b=Number(lon);
-    if(!lat||!lon||!Number.isFinite(a)||!Number.isFinite(b)||Math.abs(a)>90||Math.abs(b)>180) fail('GPX 经纬度无效。');
+    if(!lat||!lon||!Number.isFinite(a)||!Number.isFinite(b)||Math.abs(a)>90||Math.abs(b)>180) fail('bad_coords');
     const z=text(n,'ele'); return [a,b,z&&Number.isFinite(Number(z))?Number(z):null];
   }
   function load(doc,trackIndex) {
-    if(doc.tag!=='gpx') fail('请选择 GPX 格式的路线。');
-    if(descendants(doc,['trkpt','rtept']).length>200000) fail('轨迹超过 200000 个点，请先精简文件。');
+    if(doc.tag!=='gpx') fail('not_gpx');
+    if(descendants(doc,['trkpt','rtept']).length>200000) fail('too_many_points');
     const tracks=children(doc,'trk'),routes=children(doc,'rte'),alternatives=tracks.length?tracks:routes;
-    if(!alternatives.length) fail('GPX 中没有可用的轨迹。');
-    if(trackIndex===undefined&&alternatives.length>1) fail('文件包含多条路线，请在高级选项中选择。','select_track',alternatives.map((n,i)=>({track_index:i+1,name:text(n,'name')||`路线 ${i+1}`})));
+    if(!alternatives.length) fail('no_track');
+    if(trackIndex===undefined&&alternatives.length>1) fail('select_track',null,alternatives.map((n,i)=>({track_index:i+1,name:text(n,'name')||`路线 ${i+1}`})));
     const index=trackIndex??1;
-    if(!Number.isInteger(index)||index<1||index>alternatives.length) fail('所选路线编号无效。');
+    if(!Number.isInteger(index)||index<1||index>alternatives.length) fail('bad_track_index');
     const selected=alternatives[index-1],raw=descendants(selected,['trkpt','rtept']);
-    if(raw.length<2) fail('路线至少需要两个轨迹点。');
+    if(raw.length<2) fail('too_few_points');
     const coordinates=raw.map(coords),distances=[0],known=[];
     coordinates.forEach((p,i)=>{if(i) distances.push(distances[i-1]+haversine(coordinates[i-1],p)); if(p[2]!==null)known.push(i);});
-    if(!known.length) fail('整条路线缺少高程，无法估计爬升。请上传带高程的 GPX。','no_elevation');
+    if(!known.length) fail('no_elevation');
     let interior=0,endpoints=0,j=0;
     coordinates.forEach((p,i)=>{
       while(j<known.length&&known[j]<i)j++;
@@ -56,10 +57,10 @@
     for(const seg of segments) {
       if(!seg.length)continue;
       const current=seg.map(n=>repaired.get(n));
-      if(points.length&&haversine(points.at(-1),current[0])>1) fail('GPX 包含不连续的轨迹段，请选择连续路线。');
+      if(points.length&&haversine(points.at(-1),current[0])>1) fail('disconnected');
       for(const p of current) if(!points.length||haversine(points.at(-1),p)>=.001)points.push(p);
     }
-    if(points.length<2)fail('路线至少需要两个不同的轨迹位置。');
+    if(points.length<2)fail('too_few_locations');
     const samples=[[0,points[0][2]]];
     for(let i=1;i<points.length;i++)samples.push([samples.at(-1)[0]+haversine(points[i-1],points[i]),points[i][2]]);
     const sources=[['wpt',children(doc,'wpt')]];
@@ -83,8 +84,8 @@
   function interpolate(source,x) {const i=Math.max(0,Math.min(bisect(source,x)-1,source.length-2));const [a,b]=source.slice(i,i+2);return a[1]+(x-a[0])/(b[0]-a[0])*(b[1]-a[1]);}
   function smooth(route,step=5,window=20) {
     const total=route.total,source=route.samples,count=Math.ceil(total/step);
-    if(count>2000000)fail('路线过长，采样点超过 2000000 个。');
-    if(window>0&&window<16*Number.EPSILON*total)fail('高程窗口过小，请增大窗口或设为 0。');
+    if(count>2000000)fail('route_too_long');
+    if(window>0&&window<16*Number.EPSILON*total)fail('window_small');
     const distances=Array.from({length:count},(_,i)=>i*step);distances.push(total);
     const areas=[0];for(let i=1;i<source.length;i++){const [a,b]=source.slice(i-1,i+1);areas.push(areas.at(-1)+(b[0]-a[0])*(a[1]+b[1])/2);}
     return distances.map(x=>{
@@ -127,43 +128,44 @@
     return choices.filter(p=>Math.abs(p.distance_m-best.distance_m)>100||p===best);
   }
   function station(item) {
-    if(typeof item.name!=='string'||!item.name.trim())fail('每个站点都需要名称。');
-    return {name:item.name.trim(),rest_seconds:numeric(item.rest_minutes??0,'停站时间')*60,cutoff_seconds:item.cutoff==null?null:duration(item.cutoff)};
+    if(typeof item.name!=='string'||!item.name.trim())fail('station_name');
+    return {name:item.name.trim(),rest_seconds:numeric(item.rest_minutes??0,'rest_minutes')*60,cutoff_seconds:item.cutoff==null?null:duration(item.cutoff)};
   }
   function checkpoints(route,options,candidates) {
     let cps=[];
     if(options.checkpoints) {
-      if(!Array.isArray(options.checkpoints)||!options.checkpoints.length)fail('手动站点不能为空。');
-      if(options.cp_selection||options.checkpoint_overrides)fail('手动站点不能同时使用站点选择。');
-      cps=options.checkpoints.map((c,i)=>({id:`manual:${i+1}`,distance_m:numeric(c.distance_km,'站点距离')*1000,official_distance_km:c.distance_km,...station(c)}));
-      if(cps.at(-1).distance_m<=0||Math.abs(cps.at(-1).distance_m-route.total)>Math.max(100,route.total*.005))fail('终点里程与路线不一致。');
-      for(let i=1;i<cps.length;i++)if(cps[i].distance_m<=cps[i-1].distance_m)fail('站点累计里程必须递增，且不能重复。');
-      cps.at(-1).distance_m=route.total;
+      if(!Array.isArray(options.checkpoints)||!options.checkpoints.length)fail('manual_empty');
+      if(options.cp_selection||options.checkpoint_overrides)fail('manual_conflict');
+      cps=options.checkpoints.map((c,i)=>({id:`manual:${i+1}`,kind:'checkpoint',distance_m:numeric(c.distance_km,'distance_km')*1000,official_distance_km:c.distance_km,...station(c)}));
+      if(cps.at(-1).distance_m<=0||Math.abs(cps.at(-1).distance_m-route.total)>Math.max(100,route.total*.005))fail('finish_mismatch');
+      for(let i=1;i<cps.length;i++)if(cps[i].distance_m<=cps[i-1].distance_m)fail('cp_order');
+      cps.at(-1).distance_m=route.total;cps.at(-1).kind='finish';
     } else {
       let selected=candidates.filter(c=>c.recognized);
-      if(options.cp_selection){const ids=options.cp_selection;if(!Array.isArray(ids)||!ids.length||new Set(ids).size!==ids.length)fail('站点选择无效。');selected=ids.map(id=>{const cp=candidates.find(c=>c.id===id);if(!cp)fail('站点编号无效。');return cp;});}
-      if(!selected.length)fail('请在高级选项中选择站点或添加手动站点。');
+      if(options.cp_selection){const ids=options.cp_selection;if(!Array.isArray(ids)||!ids.length||new Set(ids).size!==ids.length)fail('cp_selection');selected=ids.map(id=>{const cp=candidates.find(c=>c.id===id);if(!cp)fail('cp_unknown');return cp;});}
+      if(!selected.length)fail('no_selection');
       const overrides=options.checkpoint_overrides??{};
-      if(Object.keys(overrides).some(id=>!selected.some(c=>c.id===id)))fail('站点设置引用了未选中的站点。');
+      if(Object.keys(overrides).some(id=>!selected.some(c=>c.id===id)))fail('cp_override');
       for(const cp of selected){
         const override=overrides[cp.id]??{},item={...cp,...override},endpoint=`${cp.name} ${cp.type}`,fields=station(item),combined=/起终点|起終點/.test(endpoint)||(/\bstart\b/i.test(endpoint)&&/\bfinish\b/i.test(endpoint));
         if(combined&&override.distance_km===undefined){
-          if([route.points[0],route.points.at(-1)].some(p=>haversine([cp.lat,cp.lon],p)>100))fail('共用起终点距离路线端点超过 100 m，请确认站点位置。');
-          cps.push({...fields,id:`${cp.id}:start`,distance_m:0,name:`${fields.name}（起点）`,official_distance_km:null,cutoff_seconds:null},{...fields,id:`${cp.id}:finish`,distance_m:route.total,name:`${fields.name}（终点）`,official_distance_km:null});continue;
+          if([route.points[0],route.points.at(-1)].some(p=>haversine([cp.lat,cp.lon],p)>100))fail('start_far');
+          cps.push({...fields,id:`${cp.id}:start`,kind:'start',baseName:fields.name,distance_m:0,name:`${fields.name}（起点）`,official_distance_km:null,cutoff_seconds:null},{...fields,id:`${cp.id}:finish`,kind:'finish',baseName:fields.name,distance_m:route.total,name:`${fields.name}（终点）`,official_distance_km:null});continue;
         }
         let position;
-        if(override.distance_km!==undefined){position=numeric(override.distance_km,'站点距离')*1000;if(position>route.total)fail('站点位置超过路线终点。');}
-        else if(/\bstart\b|起点|起點/i.test(endpoint)){position=0;if(haversine([cp.lat,cp.lon],route.points[0])>100)fail('起点距路线超过 100 m，请确认站点位置。');}
-        else if(/\bfinish\b|终点|終點/i.test(endpoint)){position=route.total;if(haversine([cp.lat,cp.lon],route.points.at(-1))>100)fail('终点距路线超过 100 m，请确认站点位置。');}
-        else {const choices=cp.projection_options;if(choices.length>1)fail(`${cp.name} 有多个经过位置，请在高级选项中选择。`);if(choices[0].offset_m>100&&!override.allow_off_route)fail(`${cp.name} 距路线超过 100 m，请在高级选项中确认。`);position=choices[0].distance_m;}
-        cps.push({id:cp.id,distance_m:position,official_distance_km:null,...fields});
+        if(override.distance_km!==undefined){position=numeric(override.distance_km,'distance_km')*1000;if(position>route.total)fail('cp_over_total');}
+        else if(/\bstart\b|起点|起點/i.test(endpoint)){position=0;if(haversine([cp.lat,cp.lon],route.points[0])>100)fail('start_offset');}
+        else if(/\bfinish\b|终点|終點/i.test(endpoint)){position=route.total;if(haversine([cp.lat,cp.lon],route.points.at(-1))>100)fail('finish_offset');}
+        else {const choices=cp.projection_options;if(choices.length>1)fail('cp_ambiguous',{name:cp.name});if(choices[0].offset_m>100&&!override.allow_off_route)fail('cp_off_route',{name:cp.name});position=choices[0].distance_m;}
+        cps.push({id:cp.id,kind:'checkpoint',distance_m:position,official_distance_km:null,...fields});
       }
       cps.sort((a,b)=>a.distance_m-b.distance_m);
     }
-    if(cps[0].distance_m>.001)cps.unshift({id:'start',name:'起点',distance_m:0,official_distance_km:options.checkpoints?0:null,rest_seconds:0,cutoff_seconds:null});
-    if(route.total-cps.at(-1).distance_m>.001)cps.push({id:'finish',name:'终点',distance_m:route.total,official_distance_km:null,rest_seconds:0,cutoff_seconds:null});
-    for(let i=1;i<cps.length;i++)if(cps[i].distance_m-cps[i-1].distance_m<.001)fail('站点累计里程必须递增，且不能重复。');
-    if(cps[0].rest_seconds||cps.at(-1).rest_seconds)fail('起终点停站时间必须为 0。');
+    if(cps[0].distance_m>.001)cps.unshift({id:'start',kind:'start',name:'起点',distance_m:0,official_distance_km:options.checkpoints?0:null,rest_seconds:0,cutoff_seconds:null});
+    if(route.total-cps.at(-1).distance_m>.001)cps.push({id:'finish',kind:'finish',name:'终点',distance_m:route.total,official_distance_km:null,rest_seconds:0,cutoff_seconds:null});
+    for(let i=1;i<cps.length;i++)if(cps[i].distance_m-cps[i-1].distance_m<.001)fail('cp_order');
+    if(cps[0].rest_seconds||cps.at(-1).rest_seconds)fail('start_rest');
+    for(const cp of cps) if(!cp.kind) cp.kind='checkpoint';
     return cps;
   }
   function section(profile,left,right) {if(left===right)return [[left,interpolate(profile,left)]];return [[left,interpolate(profile,left)],...profile.slice(bisect(profile,left),bisect(profile,right,false)),[right,interpolate(profile,right)]];}
@@ -177,12 +179,12 @@
   function process(data,generate=false) {
     const o={...(data.options??{})};
     const limits={ascent_smoothing_m:2000,ascent_threshold_m:1000,ascent_km_per_100m:10,fatigue_rate:1,target_step_minutes:1440};
-    const allowed=new Set([...Object.keys(limits),'start_time','secondary_display','track_index','checkpoint_overrides','cp_selection','checkpoints','targets']);
-    for(const [key,value]of Object.entries(o)){if(!allowed.has(key))fail('包含不支持的高级选项。');if(key in limits)numeric(value,key,0,limits[key]);}
+    const allowed=new Set([...Object.keys(limits),'start_time','secondary_display','track_index','checkpoint_overrides','cp_selection','checkpoints','targets','lang']);
+    for(const [key,value]of Object.entries(o)){if(!allowed.has(key))fail('option_unknown');if(key in limits)numeric(value,key,0,limits[key]);}
     const p={...DEFAULTS,...o},route=load(data.document,o.track_index),profile=smooth(route),gain=ascent(route,p.ascent_smoothing_m,p.ascent_threshold_m);
     const candidates=route.candidates.map(cp=>({...cp,projection_options:projections(route,cp)}));
     const confirmed=data.sha256===KNOWN_SHA?{'wpt:5':{distance_km:47.76857075906329}}:{};
-    const filename=(data.filename||'route.gpx').replaceAll('\\','/').split('/').at(-1),name=(filename.replace(/\.[^.]*$/,'').slice(0,120)||'越野路线');
+    const filename=(data.filename||'route.gpx').replaceAll('\\','/').split('/').at(-1),name=(filename.replace(/\.[^.]*$/,'').slice(0,120)||'route');
     const routeStats=stats(profile,gain,0,route.total);
     const response={name,repair:route.repair,confirmed_overrides:confirmed,original_sha256:data.sha256,inspection:{distance_m:route.total,ascent_m:routeStats.ascent_m,descent_m:routeStats.descent_m,cp_candidates:candidates,diagnostics:route.diagnostics}};
     if(!generate)return response;
@@ -191,19 +193,20 @@
       o.checkpoint_overrides={...defaults,...o.checkpoint_overrides};
       if(!candidates.length){o.checkpoints=[{name:'终点',distance_km:route.total/1000}];delete o.checkpoint_overrides;}
     }
-    if(!['pace','equivalent_pace','arrival_time'].includes(p.secondary_display))fail('表格显示方式无效。');
-    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(p.start_time))fail('发枪时间格式应为 HH:MM，例如 06:00。');
-    if(p.target_step_minutes<=0)fail('方案间隔必须大于 0。');
+    if(o.lang!==undefined&&!['zh','en'].includes(o.lang))fail('unknown_language');
+    if(!['pace','equivalent_pace','arrival_time'].includes(p.secondary_display))fail('secondary');
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(p.start_time))fail('start_time');
+    if(p.target_step_minutes<=0)fail('step');
     const cps=checkpoints(route,o,candidates);let eqTotal=0;
     cps.forEach((cp,i)=>{Object.assign(cp,stats(profile,gain,i?cps[i-1].distance_m:0,cp.distance_m,p.ascent_km_per_100m));eqTotal+=cp.eq_distance_km;cp.cumulative_eq_distance_km=eqTotal;});
     cps.forEach((cp,i)=>cp.water_ml=cps[i+1]?.segment_water_ml??0);
     const center=duration(data.target);
-    if(o.targets&&(!Array.isArray(o.targets)||!o.targets.length))fail('目标方案不能为空。');
+    if(o.targets&&(!Array.isArray(o.targets)||!o.targets.length))fail('targets_empty');
     const targets=o.targets?o.targets.map(duration):[-2,-1,0,1,2].map(i=>center+i*p.target_step_minutes*60);
-    if(targets.some(t=>t<=0)||new Set(targets).size!==targets.length)fail('方案时间必须大于 0 且不能重复。短目标可在高级选项中选择“仅目标方案”。');targets.sort((a,b)=>a-b);
+    if(targets.some(t=>t<=0)||new Set(targets).size!==targets.length)fail('targets_invalid');targets.sort((a,b)=>a-b);
     const rest=cps.reduce((s,c)=>s+c.rest_seconds,0),exponent=1+Math.log2(1+p.fatigue_rate);
     const schedules=targets.map(target=>{
-      if(target<=rest)fail('目标完赛时间必须大于全部停站时间。');
+      if(target<=rest)fail('rest_over');
       let priorMoving=0,priorRest=0;
       const times=cps.map((cp,i)=>{const cumulative=(target-rest)*(cp.cumulative_eq_distance_km/eqTotal)**exponent,moving=cumulative-priorMoving,arrival=cumulative+priorRest,departure=arrival+cp.rest_seconds,cutoff=cp.cutoff_seconds;
         const t={arrival_seconds:arrival,departure_seconds:departure,moving_seconds:moving,eq_pace_seconds_per_km:i?moving/cp.eq_distance_km:null,distance_pace_seconds_per_km:i?moving/(cp.segment_distance_m/1000):null,pace_seconds_per_km:i?moving/(p.secondary_display==='equivalent_pace'?cp.eq_distance_km:cp.segment_distance_m/1000):null,cutoff_status:cutoff===null?'not_checked':arrival>cutoff+1e-7?'arrival_late':departure>cutoff+1e-7?'departure_late':'on_time'};
@@ -214,7 +217,7 @@
     const plan={schema_version:2,name,source:{filename,original_sha256:data.sha256},parameters:{...p,fatigue_exponent:exponent,rest_total_seconds:rest},route:{distance_m:route.total,ascent_m:totalStats.ascent_m,descent_m:totalStats.descent_m,eq_distance_km:eqTotal,diagnostics:route.diagnostics,grade_fractions:totalStats.grade_fractions},checkpoints:cps,targets_seconds:targets,schedules};
     const verification={finish_targets_match:schedules.every(s=>Math.abs(s.checkpoints.at(-1).departure_seconds-s.target_seconds)<1e-7),rests_match:schedules.every(s=>s.checkpoints.every((t,i)=>Math.abs(t.departure_seconds-t.arrival_seconds-cps[i].rest_seconds)<1e-7)),cutoff_checked_stations:cps.slice(1).filter(c=>c.cutoff_seconds!==null).length,cutoff_unchecked_stations:cps.slice(1).filter(c=>c.cutoff_seconds===null).length,cutoff_failures:[]};
     schedules.forEach(s=>s.checkpoints.slice(1).forEach((t,i)=>{if(t.cutoff_status.includes('late'))verification.cutoff_failures.push({target_seconds:s.target_seconds,checkpoint_id:cps[i+1].id,status:t.cutoff_status});}));
-    return {...response,plan,profile:smooth(route,50,100),verification,svg:svgRenderer.render(plan),csv:renderCSV(plan)};
+    return {...response,plan,profile:smooth(route,50,100),verification,svg:svgRenderer.render(plan,{lang:o.lang}),csv:renderCSV(plan)};
   }
   function formatTime(s,seconds=false) {const total=seconds?Math.floor(s+.5):Math.floor((s+1e-7)/60)*60;return `${String(Math.floor(total/3600)).padStart(2,'0')}:${String(Math.floor(total%3600/60)).padStart(2,'0')}${seconds?`:${String(total%60).padStart(2,'0')}`:''}`;}
   const formatPace=s=>s===null?'-':`${Math.floor(Math.floor(s+.5)/60)}:${String(Math.floor(s+.5)%60).padStart(2,'0')}`;

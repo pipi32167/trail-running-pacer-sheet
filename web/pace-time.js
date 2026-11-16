@@ -1,16 +1,19 @@
 /* Shared time labels for the web table and SVG/PNG exports. */
 'use strict';
 (function(root){
+  const i18n = typeof module!=='undefined' ? require('./i18n.js') : root.TrailI18n;
   const minutes = seconds => Math.floor(seconds / 60 + 1e-9);
   const pad = value => String(value).padStart(2,'0');
   function elapsed(seconds) {
     const total=minutes(seconds);
     return `${pad(Math.floor(total/60))}:${pad(total%60)}`;
   }
-  function clock(startTime,seconds) {
+  function clock(startTime,seconds,lang) {
+    const t=i18n.forLang(lang);
     const [h,m]=startTime.slice(-5).split(':').map(Number);
     const total=h*60+m+minutes(seconds),days=Math.floor(total/1440);
-    return `${days===1?'次日 ':days?`+${days}天 `:''}${pad(Math.floor(total%1440/60))}:${pad(total%60)}`;
+    const prefix=days===1?t('time.nextDay'):days?t('time.daysLater',{days}):'';
+    return `${prefix?`${prefix} `:''}${pad(Math.floor(total%1440/60))}:${pad(total%60)}`;
   }
   function pace(seconds) {
     const total=Math.floor(seconds+.5);
@@ -18,7 +21,6 @@
   }
   function durationDigits(value) { return String(value==null?'':value).replace(/\D/g,'').slice(0,4); }
   /* Typing only digits: the colon is inserted after the hour so a numeric keypad is enough. */
-  /* Typing only digits: the colon is inserted automatically so a numeric keypad is enough. */
   function maskDuration(value) {
     const text=String(value==null?'':value).replace(/[^\d:]/g,'');
     const digits=text.replace(/\D/g,'').slice(0,4);
@@ -38,13 +40,14 @@
     const hour=digits.length>2?digits.slice(0,-2):digits,minute=digits.length>2?digits.slice(-2):'';
     return `${hour.padStart(2,'0')}:${minute.padStart(2,'0')}`;
   }
-  function secondary(mode,startTime,timing,index,lastIndex) {
+  function secondary(mode,startTime,timing,index,lastIndex,lang) {
+    const t=i18n.forLang(lang);
     if(mode==='arrival_time') {
-      const label=index===0?'发枪':index===lastIndex?'完赛':'到站';
-      return `${label} ${clock(startTime,timing.arrival_seconds)}`;
+      const label=index===0?t('time.start'):index===lastIndex?t('time.finish'):t('time.arrival');
+      return `${label} ${clock(startTime,timing.arrival_seconds,lang)}`;
     }
     if(timing.pace_seconds_per_km==null)return '';
-    return `${mode==='equivalent_pace'?'等效配速':'配速'} ${pace(timing.pace_seconds_per_km)}/km`;
+    return `${mode==='equivalent_pace'?t('time.eqPace'):t('time.pace')} ${pace(timing.pace_seconds_per_km)}/km`;
   }
   const api={elapsed,clock,pace,secondary,maskDuration,normalizeDuration};
   if(typeof module!=='undefined')module.exports=api;
