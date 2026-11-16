@@ -332,8 +332,8 @@
     'lang.en': 'EN',
 
     'hero.eyebrow': 'Sketch a plan for the next start line',
-    'hero.title1': 'The trail climbs,',
-    'hero.title2': 'you keep the rhythm.',
+    'hero.title1': 'The trail runs steep,',
+    'hero.title2': 'the rhythm you keep.',
     'hero.desc1': 'An even-effort pace sheet for trail races.',
     'hero.desc2': 'Bring your route. Leave the math to us.',
     'hero.labelSummit': 'Slow still counts.',
