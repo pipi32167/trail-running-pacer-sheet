@@ -2,7 +2,7 @@
 const i18n = globalThis.TrailI18n;
 const t = (key, params) => i18n.t(key, params);
 const documentURL = document.currentScript.src;
-const ASSET_VERSION = 'frontend-v29';
+const ASSET_VERSION = 'frontend-v30';
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register(new URL(`./service-worker.js?v=${ASSET_VERSION}`,documentURL)).then(()=>navigator.serviceWorker.ready).then(()=>{
     state.offlineReady = true; $('privacy-note').textContent=t('form.privacyCached');
