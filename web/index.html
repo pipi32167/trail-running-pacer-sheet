@@ -10,12 +10,12 @@
   <link rel="icon" href="./favicon-32.png" sizes="32x32" type="image/png">
   <link rel="icon" href="./favicon-16.png" sizes="16x16" type="image/png">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-  <link rel="stylesheet" href="./style.css?v=frontend-v32">
-  <script src="./i18n.js?v=frontend-v32" defer></script>
-  <script src="./pace-time.js?v=frontend-v32" defer></script>
-  <script src="./pace-svg.js?v=frontend-v32" defer></script>
-  <script src="./pace-wallpaper.js?v=frontend-v32" defer></script>
-  <script src="./app.js?v=frontend-v32" defer></script>
+  <link rel="stylesheet" href="./style.css?v=frontend-v33">
+  <script src="./i18n.js?v=frontend-v33" defer></script>
+  <script src="./pace-time.js?v=frontend-v33" defer></script>
+  <script src="./pace-svg.js?v=frontend-v33" defer></script>
+  <script src="./pace-wallpaper.js?v=frontend-v33" defer></script>
+  <script src="./app.js?v=frontend-v33" defer></script>
 </head>
 <body>
   <div class="page-shell">
@@ -125,10 +125,13 @@
                 <label><span data-i18n="wall.layout">版式</span><select id="wallpaper-rotation"><option value="90" data-i18n="wall.landscape">横版 · 表格旋转 90°，占满屏宽</option><option value="0" data-i18n="wall.portrait">竖版 · 表格保持正向</option></select></label>
                 <label><span data-i18n="wall.top">顶部留白 %</span><input id="wallpaper-top" type="number" min="0" max="70" value="27"></label>
                 <label><span data-i18n="wall.bottom">底部留白 %</span><input id="wallpaper-bottom" type="number" min="0" max="50" value="9"></label>
-                <label><span data-i18n="wall.theme">底色</span><select id="wallpaper-theme"><option value="dark" data-i18n="wall.dark">深色</option><option value="light" data-i18n="wall.light">浅色</option></select></label>
                 <label><span data-i18n="wall.width">宽度 px</span><input id="wallpaper-width" type="number" min="640" max="4096" step="1" value="1179" disabled></label>
                 <label><span data-i18n="wall.height">高度 px</span><input id="wallpaper-height" type="number" min="960" max="4096" step="1" value="2556" disabled></label>
               </div>
+              <fieldset class="wallpaper-themes">
+                <legend data-i18n="wall.theme">壁纸风格</legend>
+                <div id="wallpaper-theme-list" class="theme-swatches" role="radiogroup" data-i18n-aria="wall.theme" aria-label="壁纸风格"></div>
+              </fieldset>
               <label class="wallpaper-toggle"><input type="checkbox" id="wallpaper-overlay" checked> <span data-i18n="wall.overlay">叠加锁屏遮挡预览</span></label>
               <p id="wallpaper-error" role="alert" class="wallpaper-note" hidden></p>
               <p id="wallpaper-note" class="wallpaper-note"></p>

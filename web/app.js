@@ -2,7 +2,7 @@
 const i18n = globalThis.TrailI18n;
 const t = (key, params) => i18n.t(key, params);
 const documentURL = document.currentScript.src;
-const ASSET_VERSION = 'frontend-v32';
+const ASSET_VERSION = 'frontend-v33';
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register(new URL(`./service-worker.js?v=${ASSET_VERSION}`,documentURL)).then(()=>navigator.serviceWorker.ready).then(()=>{
     state.offlineReady = true; $('privacy-note').textContent=t('form.privacyCached');
@@ -398,9 +398,37 @@ function fillDeviceOptions() {
 }
 fillDeviceOptions();
 $('wallpaper-device').value = 'iphone-61';
+/* Theme swatches: the chip shows the actual gradient so the choice reads without opening it. */
+state.wallTheme = 'moss';
+function fillThemeSwatches() {
+  const list = $('wallpaper-theme-list');
+  list.innerHTML = '';
+  for (const [key, theme] of Object.entries(WALL.THEMES)) {
+    const label = document.createElement('label');
+    label.className = 'theme-swatch';
+    const input = document.createElement('input');
+    input.type = 'radio'; input.name = 'wallpaper-theme'; input.value = key;
+    input.checked = key === state.wallTheme;
+    const chip = document.createElement('span');
+    chip.className = 'swatch-chip';
+    chip.style.setProperty('--chip-a', theme.stops[0]);
+    chip.style.setProperty('--chip-b', theme.stops[1]);
+    chip.style.setProperty('--chip-accent', theme.accent);
+    // Label sits on the gradient, so its ink follows the chip's own brightness.
+    if (WALL.luminance(theme.stops[1]) > .55) { chip.classList.add('is-light'); chip.style.setProperty('--chip-ink', '#23201c'); }
+    const name = document.createElement('span');
+    name.className = 'swatch-name';
+    name.textContent = t(`wall.theme.${key}`);
+    chip.append(name);
+    label.append(input, chip);
+    list.append(label);
+  }
+}
+fillThemeSwatches();
 function wallpaperOptions() {
   const device = $('wallpaper-device').value;
-  const options = {device, rotation:Number($('wallpaper-rotation').value), top:$('wallpaper-top').value, bottom:$('wallpaper-bottom').value, anchor:Number($('wallpaper-rotation').value)?'top':'center', theme:$('wallpaper-theme').value, lang:lang()};
+  const theme = document.querySelector('input[name="wallpaper-theme"]:checked')?.value || state.wallTheme;
+  const options = {device, rotation:Number($('wallpaper-rotation').value), top:$('wallpaper-top').value, bottom:$('wallpaper-bottom').value, anchor:Number($('wallpaper-rotation').value)?'top':'center', theme, lang:lang()};
   if (device === 'custom') { options.width = $('wallpaper-width').value; options.height = $('wallpaper-height').value; }
   return options;
 }
@@ -444,7 +472,20 @@ $('wallpaper-open').addEventListener('click', () => {
   $('wallpaper-open').setAttribute('aria-expanded', String(!panel.hidden));
   if (!panel.hidden) { drawWallpaper(); panel.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'}); }
 });
-for (const id of ['wallpaper-device','wallpaper-rotation','wallpaper-top','wallpaper-bottom','wallpaper-theme','wallpaper-width','wallpaper-height','wallpaper-overlay']) $(id).addEventListener('input', drawWallpaper);
+for (const id of ['wallpaper-device','wallpaper-rotation','wallpaper-top','wallpaper-bottom','wallpaper-width','wallpaper-height','wallpaper-overlay']) $(id).addEventListener('input', drawWallpaper);
+$('wallpaper-theme-list').addEventListener('change', (event) => {
+  if (event.target.name !== 'wallpaper-theme') return;
+  state.wallTheme = event.target.value;
+  drawWallpaper();
+});
+$('wallpaper-theme-list').addEventListener('keydown', (event) => {
+  if (!['ArrowRight','ArrowLeft','ArrowUp','ArrowDown'].includes(event.key)) return;
+  const chips = [...document.querySelectorAll('input[name="wallpaper-theme"]')];
+  const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
+  const next = chips[(chips.indexOf(event.target) + step + chips.length) % chips.length];
+  if (!next) return;
+  event.preventDefault(); next.checked = true; next.focus(); state.wallTheme = next.value; drawWallpaper();
+});
 for (const type of ['wallpaper-png','wallpaper-svg']) $(type).addEventListener('click', async () => {
   if (!state.result) return;
   const btn = $(type), original = btn.textContent;
@@ -489,6 +530,7 @@ i18n.onChange(() => {
   }
   for (const option of $('table-style').options) option.textContent = t(`style.${option.value}`);
   fillDeviceOptions();
+  fillThemeSwatches();
 });
 i18n.apply(document);
 for (const node of document.querySelectorAll('[data-lang-button]')) node.setAttribute('aria-pressed', String(node.dataset.langButton === lang()));

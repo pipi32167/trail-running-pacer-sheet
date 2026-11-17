@@ -41,6 +41,10 @@ test('脚本里直接引用的键都存在', () => {
 test('动态拼出的键覆盖全部风格与机型', () => {
   for (const key of Object.keys(sheet.STYLES)) assert.ok(i18n.MESSAGES.zh[`style.${key}`], key);
   for (const key of Object.keys(wallpaper.DEVICES)) assert.ok(i18n.MESSAGES.zh[`wall.device.${key}`], key);
+  for (const key of Object.keys(wallpaper.THEMES)) {
+    assert.ok(i18n.MESSAGES.zh[`wall.theme.${key}`], `缺少 wall.theme.${key}`);
+    assert.ok(i18n.MESSAGES.en[`wall.theme.${key}`], `缺少英文 wall.theme.${key}`);
+  }
 });
 
 test('计算引擎的每个错误码都有中英文提示', () => {

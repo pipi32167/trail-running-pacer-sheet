@@ -61,3 +61,29 @@ test('壁纸底色写进导出 SVG，叠层按背景明暗换色',()=>{
   assert.ok(darkMask.includes('#ffffff'));
   assert.ok(lightMask.includes('#2b2721'));
 });
+
+test('每套壁纸风格都有独立底色，且与表格底色拉开差距',()=>{
+  const keys=Object.keys(wallpaper.THEMES);
+  assert.ok(keys.length>=8,`只有 ${keys.length} 套风格`);
+  const seen=new Set();
+  for(const key of keys){
+    const light=wallpaper.layout(lightTable,{theme:key});
+    const dark=wallpaper.layout(darkTable,{theme:key});
+    assert.ok(/^#[0-9a-f]{6}$/.test(light.background),`${key} 底色格式`);
+    assert.ok(!seen.has(light.background),`${key} 底色与其他风格重复`);
+    seen.add(light.background);
+    assert.notEqual(light.background,light.paper,`${key} 底色与白表同色`);
+    assert.notEqual(dark.background,dark.paper,`${key} 底色与深表同色`);
+    assert.equal(light.palette.stops.length,2,`${key} 缺少渐变`);
+    assert.ok(wallpaper.luminance(dark.background)<=wallpaper.luminance(light.background)+.02,`${key} 深表底色不应更亮`);
+  }
+});
+test('渐变、颗粒、暗角写进导出，未知风格回退到深色',()=>{
+  const svg=wallpaper.render(lightTable,{theme:'moss'});
+  assert.ok(svg.includes('linearGradient id="wbg-moss"'));
+  assert.ok(svg.includes('feTurbulence'));
+  assert.ok(svg.includes('wvig-moss'));
+  assert.ok(svg.includes('filter="url(#wlift-moss)"'));
+  assert.ok(svg.includes(lightTable));
+  assert.equal(wallpaper.layout(lightTable,{theme:'nope'}).theme,'dark');
+});

@@ -1,6 +1,6 @@
 'use strict';
-const CACHE = 'trail-pacer-static-v32';
-const FILES = ['./','./index.html','./style.css?v=frontend-v32','./i18n.js?v=frontend-v32','./pace-time.js?v=frontend-v32','./app.js?v=frontend-v32','./pace-worker.js?v=frontend-v32','./pace-engine.js?v=frontend-v32','./pace-svg.js?v=frontend-v32','./pace-wallpaper.js?v=frontend-v32','./favicon.svg','./favicon-32.png','./favicon-16.png','./apple-touch-icon.png'];
+const CACHE = 'trail-pacer-static-v33';
+const FILES = ['./','./index.html','./style.css?v=frontend-v33','./i18n.js?v=frontend-v33','./pace-time.js?v=frontend-v33','./app.js?v=frontend-v33','./pace-worker.js?v=frontend-v33','./pace-engine.js?v=frontend-v33','./pace-svg.js?v=frontend-v33','./pace-wallpaper.js?v=frontend-v33','./favicon.svg','./favicon-32.png','./favicon-16.png','./apple-touch-icon.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('trail-pacer-static-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
