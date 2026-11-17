@@ -129,16 +129,15 @@ test('切换语言只改当前语言状态，缺省回中文', () => {
 });
 
 test('英文词典不含中文文案，白名单只允许英文界面隐藏的键与专有名词', () => {
-  // brand.tag / advanced.titleAlt 在 html[lang=en] 下被 CSS 隐藏；detail.independent 里的
-  // 耐力学社 是思路出处，属于专有名词，保留原文。
-  const HIDDEN_IN_EN = new Set(['brand.tag', 'advanced.titleAlt', 'detail.independent']);
+  // brand.tag / advanced.titleAlt 在 html[lang=en] 下被 CSS 隐藏。
+  const HIDDEN_IN_EN = new Set(['brand.tag', 'advanced.titleAlt']);
   for (const [key, value] of Object.entries(i18n.MESSAGES.en)) {
     if (HIDDEN_IN_EN.has(key)) continue;
     assert.ok(!/[\u3400-\u9fa5]/.test(value), `英文 ${key} 残留中文：${value}`);
   }
   assert.match(i18n.MESSAGES.en['brand.tag'], /[\u3400-\u9fa5]/);
   assert.match(i18n.MESSAGES.en['advanced.titleAlt'], /[\u3400-\u9fa5]/);
-  assert.match(i18n.MESSAGES.en['detail.independent'], /耐力学社/);
+  assert.match(i18n.MESSAGES.en['detail.independent'], /Institute of Endurance Science and Technology \(IEST\)/);
 });
 
 test('英文界面隐藏中文副标签，语言按钮显示 ZH', () => {
