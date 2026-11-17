@@ -36,6 +36,22 @@
 
 中文界面改后与改前一致：品牌 `山野有数 TRAIL NOTES`、按钮 `中文 / EN`、`高级选项 Advanced options`。
 
+## 印章与出处（第四轮）
+
+红色印章原来透明底，手绘山脊线穿过文字，`rhythm` 不好读。现在印章加纸色底与同一套网点，线条被挡住，透明度改由文字与边框承担，中英文都适用。
+
+<img src="rhyme-en-live.png" width="380" alt="改前印章被线条穿过">
+<img src="stamp-en-live.png" width="380" alt="改后印章有纸色底">
+
+方法说明里的出处改用官方英文名：
+
+| 语言 | 文案 |
+| --- | --- |
+| 中文 | 基于耐力学社（IEST）体感一致配速思路的独立实现，并非 RunArt.Net 官方输出。 |
+| 英文 | An independent implementation of the even-effort idea from the Institute of Endurance Science and Technology (IEST). It is not official RunArt.Net output. |
+
+英文词典至此除两个在 `html[lang="en"]` 下隐藏的键（`brand.tag`、`advanced.titleAlt`）外不含中文，测试白名单已收紧到这两个键。
+
 ## 结果表格中英对照
 
 <img src="i18n-final-zh-results.png" width="640" alt="中文结果表格">
