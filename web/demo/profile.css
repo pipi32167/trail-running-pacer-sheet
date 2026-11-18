@@ -1,0 +1,166 @@
+:root {
+  --paper: #fbf7ef;
+  --ink: #23201c;
+  --muted: #6d675c;
+  --line: #d9d2c3;
+  --primary: #2a4d9b;
+  --accent: #e0b23c;
+  --hot: #e0533c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 0 48px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 14px/1.5 "Songti SC", "Noto Serif SC", Georgia, serif;
+}
+
+.lab-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  padding: 20px 26px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.lab-head h1 { margin: 0; font-size: 19px; letter-spacing: .02em; }
+.lab-head p { margin: 0; color: var(--muted); font-size: 12px; }
+.lab-switch { margin-left: auto; display: flex; gap: 8px; }
+.lab-switch button {
+  padding: 7px 13px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: #fffdf9;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.lab-switch button[aria-pressed="true"] { background: var(--ink); color: #fbf7ef; }
+
+.lab-body { padding: 18px 26px 0; display: grid; gap: 14px; }
+
+.map-card {
+  position: relative;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #e9e4d8;
+  height: 360px;
+}
+#map { position: absolute; inset: 0; }
+
+.scrub-marker { width: 18px; height: 18px; }
+.scrub-marker span {
+  display: block; width: 18px; height: 18px;
+  border: 3px solid var(--hot); border-radius: 50%;
+  background: #fffdf9; box-shadow: 0 0 0 3px #e0533c2e;
+}
+
+/* ---- 共用读数条 ---- */
+.readout {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 22px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  background: #fffdf9;
+}
+.readout b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.readout span { color: var(--muted); font-size: 12px; }
+
+.profile-card { position: relative; }
+.p-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.p-hit { fill: transparent; cursor: ew-resize; touch-action: none; }
+#scrub-range { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* ================= V1 仪表条 ================= */
+body[data-variant="1"] .profile-card {
+  padding: 8px 10px 2px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: #fffdf9;
+}
+body[data-variant="1"] .v1-grid { stroke: #e6e0d2; stroke-dasharray: 2 4; }
+body[data-variant="1"] .v1-axis { fill: #8b8477; font-size: 9px; font-family: "SF Mono", Menlo, monospace; }
+body[data-variant="1"] .v1-area { fill: #2a4d9b1f; }
+body[data-variant="1"] .v1-line { fill: none; stroke: var(--primary); stroke-width: 1.5; stroke-linejoin: round; }
+body[data-variant="1"] .v1-cp-line { stroke: #c9c2b3; stroke-dasharray: 2 3; }
+body[data-variant="1"] .v1-cp-label { fill: #8b8477; font-size: 9px; font-family: "SF Mono", Menlo, monospace; }
+body[data-variant="1"] .v1-cursor line { stroke: var(--hot); stroke-width: 1.4; }
+body[data-variant="1"] .v1-cursor circle { fill: var(--hot); stroke: #fffdf9; stroke-width: 1.6; }
+body[data-variant="1"] .v1-badge rect { fill: var(--ink); }
+body[data-variant="1"] .v1-badge text { fill: #fbf7ef; font-size: 10px; font-family: "SF Mono", Menlo, monospace; }
+body[data-variant="1"] .readout b { font-family: "SF Mono", Menlo, monospace; font-size: 17px; }
+
+/* ================= V2 地形剖面卡 ================= */
+body[data-variant="2"] .profile-card {
+  padding: 6px 12px 0;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: #fffdf9;
+  box-shadow: 4px 5px 0 #23201c18;
+}
+body[data-variant="2"] .v2-axis { fill: #7a6a4c; font-size: 9.5px; font-style: italic; }
+body[data-variant="2"] .v2-cp { fill: #3b2f1d; font-size: 10px; font-style: italic; }
+body[data-variant="2"] .v2-flag-text { fill: #3b2f1d; font-size: 11px; }
+body[data-variant="2"] .readout { border-style: dashed; background: #f7f1e2; }
+body[data-variant="2"] .readout b { font-size: 21px; }
+
+/* ================= V3 数据密集 ================= */
+body[data-variant="3"] { background: #171512; color: #efe9dd; }
+body[data-variant="3"] .lab-head { border-color: #ffffff1a; }
+body[data-variant="3"] .lab-head p { color: #9c958a; }
+body[data-variant="3"] .lab-switch button { background: #201d19; border-color: #3a352d; color: #d8d1c4; }
+body[data-variant="3"] .lab-switch button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #171512; }
+body[data-variant="3"] .map-card { border-color: #3a352d; }
+body[data-variant="3"] .profile-card {
+  padding: 10px 12px 2px;
+  border: 1px solid #3a352d;
+  border-radius: 8px;
+  background: #1d1a16;
+}
+body[data-variant="3"] .v3-grid { stroke: #ffffff14; }
+body[data-variant="3"] .v3-axis { fill: #857e72; font-size: 9px; font-family: "SF Mono", Menlo, monospace; }
+body[data-variant="3"] .v3-tick { stroke: #4a443a; }
+body[data-variant="3"] .v3-cp-line { stroke: #ffffff26; stroke-dasharray: 2 3; }
+body[data-variant="3"] .v3-cp { fill: #b5ad9e; font-size: 9px; font-family: "SF Mono", Menlo, monospace; }
+body[data-variant="3"] .v3-vrule { stroke: #fff; stroke-width: 1; opacity: .75; }
+body[data-variant="3"] .v3-hrule { stroke: #fff; stroke-width: 1; stroke-dasharray: 2 3; opacity: .4; }
+body[data-variant="3"] .v3-dot { fill: #fff; stroke: #171512; stroke-width: 1.4; }
+body[data-variant="3"] .v3-tip rect { fill: #f4efe6; }
+body[data-variant="3"] .v3-tip text { fill: #1d1a16; font-size: 10.5px; font-family: "SF Mono", Menlo, monospace; }
+body[data-variant="3"] .readout { border-color: #3a352d; background: #201d19; }
+body[data-variant="3"] .readout b { font-family: "SF Mono", Menlo, monospace; font-size: 17px; color: #f4efe6; }
+body[data-variant="3"] .readout span { color: #8b8377; }
+
+.load-error { margin: 20px 26px; padding: 12px 14px; border: 1px solid var(--hot); border-radius: 8px; color: var(--hot); }
+
+@media (max-width: 720px) {
+  .lab-head { flex-wrap: wrap; padding: 14px 14px 10px; }
+  .lab-switch { margin-left: 0; }
+  .lab-body { padding: 12px 14px 0; }
+  .map-card { height: 260px; }
+  .readout { gap: 4px 14px; padding: 8px 10px; }
+  .readout b { font-size: 16px; }
+}
+
+/* V3 图例放在图表外的卡片顶部，避免压住 CP 标注 */
+.v3-legend { display: none; }
+body[data-variant="3"] .v3-legend {
+  display: flex; gap: 16px; align-items: center;
+  padding: 2px 0 6px;
+  color: #9c958a; font-size: 11px; font-family: "SF Mono", Menlo, monospace;
+}
+.v3-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.v3-legend i { display: inline-block; width: 18px; height: 0; border-top: 1.6px solid; }
+.v3-legend .sw-gain { border-top-style: dashed; border-color: #e8c46a; }
+.v3-legend .sw-loss { border-top-style: dotted; border-color: #7fa8d6; }
+.v3-legend .sw-band { height: 9px; border: 0; border-radius: 2px; background: linear-gradient(90deg, #2f6bb0, #b9cfe4 30%, #cabb98 52%, #e8c46a 72%, #b03a2e); }
+
+/* 手机：图表按真实像素宽度重绘，字号不再被压小；这里只调容器留白 */
+@media (max-width: 720px) {
+  .profile-card { padding: 4px 6px 0; }
+  body[data-variant="3"] .v3-legend { font-size: 10px; gap: 10px; }
+}

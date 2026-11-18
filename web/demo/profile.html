@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>高度剖面轴 · 三版设计</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="./profile.css">
+</head>
+<body data-variant="1">
+  <header class="lab-head">
+    <div>
+      <h1>高度剖面轴 · 三版设计</h1>
+      <p>同一份轨迹与同一套数据；拖动剖面任意位置，地图同步定位。</p>
+    </div>
+    <nav class="lab-switch" aria-label="切换设计版本">
+      <button type="button" data-variant="1">① 仪表条</button>
+      <button type="button" data-variant="2">② 地形剖面卡</button>
+      <button type="button" data-variant="3">③ 数据密集</button>
+    </nav>
+  </header>
+
+  <main class="lab-body">
+    <section class="map-card"><div id="map"></div></section>
+
+    <section class="readout" aria-live="polite">
+      <span>距离 <b id="r-km">0.0 km</b></span>
+      <span>高程 <b id="r-ele">0 m</b></span>
+      <span>坡度 <b id="r-grade">0.0%</b></span>
+      <span>累计爬升 <b id="r-gain">0 m</b></span>
+      <span>累计下降 <b id="r-loss">0 m</b></span>
+    </section>
+
+    <section class="profile-card" id="profile-card">
+      <div class="v3-legend" aria-hidden="true">
+        <span><i class="sw-gain"></i>累计爬升</span>
+        <span><i class="sw-loss"></i>累计下降</span>
+        <span><i class="sw-band"></i>坡度分档</span>
+      </div>
+      <div id="profile-chart"></div>
+      <input id="scrub-range" type="range" min="0" max="55310" step="10" value="0" aria-label="拖动选择轨迹位置">
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <script src="./profile.js"></script>
+</body>
+</html>
