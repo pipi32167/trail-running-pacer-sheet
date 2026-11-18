@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>方案 A · Leaflet + 等高线栅格瓦片</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="./demo.css?v=demo-1">
+</head>
+<body>
+<header class="demo-header">
+  <div class="demo-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#23201c" stroke-width="1.7"><path d="M2 19l6-11 4 6 3-4 7 9z"/><path d="M9.5 8.5l1.5 2"/></svg>
+    山野有数 · 地图 Demo
+  </div>
+  <nav class="demo-nav">
+    <a href="./a-leaflet.html" aria-current="page">A · Leaflet</a>
+    <a href="./b-maplibre.html">B · MapLibre</a>
+    <a href="./compare.html">并排对比</a>
+    <a href="../index.html">返回应用</a>
+  </nav>
+</header>
+
+<div class="demo-body">
+  <div class="map-card"><div id="map" role="application" aria-label="越野路线地图"></div></div>
+  <aside class="side">
+    <section class="panel">
+      <h2>路线</h2>
+      <div id="stats"></div>
+    </section>
+    <section class="panel">
+      <h2>底图</h2>
+      <div class="layers" id="layers">
+        <label><input type="radio" name="layer" value="topo" checked><span>OpenTopoMap 等高线<em>raster · CC-BY-SA · 无 key</em></span></label>
+        <label><input type="radio" name="layer" value="osm"><span>OpenStreetMap 标准<em>raster · 无 key · 用量政策严格</em></span></label>
+        <label><input type="radio" name="layer" value="voyager"><span>CARTO Voyager<em>raster · 无 key · 干净底图</em></span></label>
+      </div>
+      <p class="hint" id="tile-hint" hidden></p>
+    </section>
+    <section class="panel">
+      <h2>坡度着色</h2>
+      <ul class="legend" id="legend"></ul>
+      <p class="note" style="margin-top:8px">颜色按 ±100 m 窗口的坡度计算，与配速表的坡度分档一致。</p>
+    </section>
+    <section class="panel">
+      <h2>技术栈</h2>
+      <p class="note"><b>Leaflet 1.9.4</b>（BSD-2，42 KB gzip）+ 栅格 XYZ 瓦片。不依赖 WebGL，老设备也能跑；底图样式由瓦片提供者决定，无法换色；高清屏需 @2x 瓦片，多数免费源没有。</p>
+    </section>
+  </aside>
+</div>
+
+<footer class="demo-footer">
+  <span>数据：© OpenStreetMap contributors · 瓦片：OpenTopoMap (CC-BY-SA) / CARTO / OSM</span>
+  <span>轨迹来自 且听风吟60K.gpx</span>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="./demo.js?v=demo-1"></script>
+<script>
+'use strict';
+const LAYERS = {
+  topo: {
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    options: { maxZoom: 17, subdomains: 'abc', attribution: '© <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA) · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }
+  },
+  osm: {
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    options: { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }
+  },
+  voyager: {
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    options: { maxZoom: 20, subdomains: 'abcd', attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · © <a href="https://carto.com/attributions">CARTO</a>' }
+  }
+};
+
+const EMBED = new URLSearchParams(location.search).has('embed');
+if (EMBED) document.body.classList.add('embed');
+
+(async function () {
+  const route = await Demo.load('./route.json');
+  document.querySelector('#stats').innerHTML = Demo.statsHtml(route);
+  document.querySelector('#legend').innerHTML = Demo.legendHtml();
+
+  const map = L.map('map', { zoomControl: true, preferCanvas: false, zoomSnap: 0.25, zoomDelta: 0.5 });
+  let tiles = null, failures = 0;
+
+  function useLayer(key) {
+    if (tiles) map.removeLayer(tiles);
+    const spec = LAYERS[key];
+    failures = 0;
+    tiles = L.tileLayer(spec.url, spec.options).addTo(map);
+    // A silent empty map is worse than a warning, so surface the failure.
+    tiles.on('tileerror', () => {
+      failures += 1;
+      if (failures !== 3) return;
+      const hint = document.querySelector('#tile-hint');
+      hint.hidden = false;
+      hint.textContent = '瓦片加载失败 3 次，可能被网络屏蔽。换一个底图试试。';
+    });
+  }
+
+  // Embedded in the compare page: the view arrives in the hash, so both sides match exactly.
+  const box = Demo.fitBounds(route);
+  const hashView = EMBED ? /^#([\d.]+)\/(-?[\d.]+)\/(-?[\d.]+)$/.exec(location.hash) : null;
+  if (hashView) map.setView([Number(hashView[2]), Number(hashView[3])], Number(hashView[1]));
+  else if (!EMBED) map.fitBounds(box, { padding: [26, 26] });
+  else map.setView([(box[0][0] + box[1][0]) / 2, (box[0][1] + box[1][1]) / 2], 10);
+  useLayer('topo');
+
+  // Casing first, then one polyline per grade bucket: 7 layers, no per-segment DOM.
+  const latlngs = route.points.map((p) => [p[0], p[1]]);
+  // White halo first: it keeps the line readable on any basemap texture.
+  L.polyline(latlngs, { color: '#fffdf9', weight: 10, opacity: .92, lineJoin: 'round', lineCap: 'round' }).addTo(map);
+  L.polyline(latlngs, { color: '#23201c', weight: 6.4, opacity: .28, lineJoin: 'round', lineCap: 'round' }).addTo(map);
+  for (const run of Demo.runs(route)) {
+    L.polyline(run.coords, { color: run.color, weight: 5.4, opacity: 1, lineJoin: 'round', lineCap: 'round' }).addTo(map);
+  }
+
+  const cps = Demo.orderedCheckpoints(route);
+  cps.forEach((cp, index) => {
+    const node = Demo.checkpointElement(cp, index, cps.length);
+    const icon = L.divIcon({ html: node.outerHTML, className: 'cp-wrap', iconSize: [12, 12], iconAnchor: [6, 6] });
+    L.marker([cp.lat, cp.lon], { icon, riseOnHover: true })
+      .addTo(map)
+      .bindPopup(`<b>${cp.name}</b><br>累计 ${cp.km.toFixed(2)} km · 距轨迹 ${cp.offset_m} m`);
+  });
+
+  L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
+  document.querySelector('#layers').addEventListener('change', (event) => useLayer(event.target.value));
+
+  // Report the view to the compare page, and follow the other pane when it moves.
+  let echo = false;
+  map.on('moveend', () => {
+    if (echo) { echo = false; return; }
+    if (parent === window) return;
+    parent.postMessage({ type: 'view', engine: 'leaflet', lat: map.getCenter().lat, lng: map.getCenter().lng, zoom: map.getZoom() }, location.origin);
+  });
+  window.addEventListener('message', (event) => {
+    if (event.origin !== location.origin || event.data?.type !== 'view' || event.data.engine === 'leaflet') return;
+    echo = true;
+    map.setView([event.data.lat, event.data.lng], event.data.zoom, { animate: false });
+  });
+  if (EMBED && parent !== window) parent.postMessage({ type: 'ready', engine: 'leaflet' }, location.origin);
+})().catch((error) => {
+  document.querySelector('#map').innerHTML = `<p style="padding:20px;font:13px var(--mono);color:#a3402a">${error.message}</p>`;
+});
+</script>
+</body>
+</html>

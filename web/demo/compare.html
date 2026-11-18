@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>并排对比 · Leaflet vs MapLibre</title>
+<link rel="stylesheet" href="./demo.css?v=demo-1">
+</head>
+<body>
+<header class="demo-header">
+  <div class="demo-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#23201c" stroke-width="1.7"><path d="M2 19l6-11 4 6 3-4 7 9z"/><path d="M9.5 8.5l1.5 2"/></svg>
+    方案 A / B 并排对比
+  </div>
+  <nav class="demo-nav">
+    <a href="./a-leaflet.html">单看 A</a>
+    <a href="./b-maplibre.html">单看 B</a>
+    <a href="./compare.html" aria-current="page">并排对比</a>
+    <a href="../index.html">返回应用</a>
+  </nav>
+</header>
+
+<div class="compare-bar">
+  <label><input type="checkbox" id="sync" checked> 同步视野与缩放</label>
+  <span>拖动任意一侧，另一侧跟随。两侧各自保留底图切换。</span>
+</div>
+
+<div class="compare-body">
+  <div class="compare-pane">
+    <header><span>A · Leaflet + 等高线栅格瓦片</span><a href="./a-leaflet.html" target="_blank" rel="noopener">新窗口</a></header>
+    <iframe id="pane-a" title="方案 A：Leaflet"></iframe>
+  </div>
+  <div class="compare-pane">
+    <header><span>B · MapLibre + 矢量瓦片</span><a href="./b-maplibre.html" target="_blank" rel="noopener">新窗口</a></header>
+    <iframe id="pane-b" title="方案 B：MapLibre"></iframe>
+  </div>
+</div>
+
+<footer class="demo-footer">
+  <span>两侧使用同一条轨迹、同一套坡度配色与站点标注，差异只来自底图与渲染引擎。</span>
+</footer>
+
+<script>
+'use strict';
+const ROUTE_BOX = { north: 28.3183, south: 28.2150, west: 121.2579, east: 121.3629 };
+/* Both panes get the same zoom/centre in the hash, so the first frame already matches. */
+function mountPanes() {
+  const view = sharedView('a');
+  const hash = `#${view.zoom}/${view.lat.toFixed(5)}/${view.lng.toFixed(5)}`;
+  for (const key of ['a', 'b']) panes[key].src = `${PANE_SRC[key]}?embed=1${hash}`;
+}
+fetch('./route.json').then((r) => r.json()).then((route) => {
+  const lats = route.points.map((p) => p[0]), lons = route.points.map((p) => p[1]);
+  ROUTE_BOX.north = Math.max(...lats); ROUTE_BOX.south = Math.min(...lats);
+  ROUTE_BOX.west = Math.min(...lons); ROUTE_BOX.east = Math.max(...lons);
+  lastView = sharedView('a');
+  mountPanes();
+}).catch(() => mountPanes());
+const panes = { a: document.querySelector('#pane-a'), b: document.querySelector('#pane-b') };
+const PANE_SRC = { a: './a-leaflet.html', b: './b-maplibre.html' };
+let lastView = null;
+// Panes ignore the move that the parent causes, so no time-based guard is needed here.
+
+// Each demo reports its view; the parent forwards it to the other side.
+function forward(from, payload) {
+  if (!document.querySelector('#sync').checked) return;
+  const target = panes[from === 'a' ? 'b' : 'a'];
+  target.contentWindow.postMessage({ type: 'view', ...payload }, location.origin);
+}
+/* Mercator fit for the whole route, computed once and reused for both panes. */
+function sharedView(paneKey) {
+  const pane = panes[paneKey];
+  const size = { width: pane.clientWidth || 720, height: pane.clientHeight || 620 };
+  const pad = 44;
+  const world = (lat, lng) => {
+    const scale = 256;
+    const x = (lng + 180) / 360 * scale;
+    const y = (1 - Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360)) / Math.PI) / 2 * scale;
+    return [x, y];
+  };
+  const box = ROUTE_BOX;
+  const a = world(box.north, box.west), b = world(box.south, box.east);
+  const spanX = Math.abs(b[0] - a[0]), spanY = Math.abs(b[1] - a[1]);
+  const zoom = Math.min(Math.log2((size.width - pad * 2) / spanX), Math.log2((size.height - pad * 2) / spanY));
+  const center = world((box.north + box.south) / 2, (box.west + box.east) / 2);
+  const centerLat = Math.atan(Math.sinh(Math.PI * (1 - 2 * center[1] / 256))) * 180 / Math.PI;
+  const centerLng = center[0] / 256 * 360 - 180;
+  return { lat: centerLat, lng: centerLng, zoom: Math.floor(zoom * 4) / 4 };
+}
+
+window.addEventListener('message', (event) => {
+  if (event.origin !== location.origin || !event.data) return;
+  const from = event.source === panes.a.contentWindow ? 'a' : event.source === panes.b.contentWindow ? 'b' : null;
+  if (!from) return;
+  if (event.data.type === 'ready') return;
+  if (event.data.type !== 'view') return;
+  lastView = { lat: event.data.lat, lng: event.data.lng, zoom: event.data.zoom };
+  forward(from, event.data);
+});
+document.querySelector('#sync').addEventListener('change', () => {});
+</script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>方案 B · MapLibre + OpenFreeMap 矢量瓦片</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+<link rel="stylesheet" href="./demo.css?v=demo-1">
+</head>
+<body>
+<header class="demo-header">
+  <div class="demo-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#23201c" stroke-width="1.7"><path d="M2 19l6-11 4 6 3-4 7 9z"/><path d="M9.5 8.5l1.5 2"/></svg>
+    山野有数 · 地图 Demo
+  </div>
+  <nav class="demo-nav">
+    <a href="./a-leaflet.html">A · Leaflet</a>
+    <a href="./b-maplibre.html" aria-current="page">B · MapLibre</a>
+    <a href="./compare.html">并排对比</a>
+    <a href="../index.html">返回应用</a>
+  </nav>
+</header>
+
+<div class="demo-body">
+  <div class="map-card"><div id="map" role="application" aria-label="越野路线地图"></div></div>
+  <aside class="side">
+    <section class="panel">
+      <h2>路线</h2>
+      <div id="stats"></div>
+    </section>
+    <section class="panel">
+      <h2>底图样式</h2>
+      <div class="layers" id="styles">
+        <label><input type="radio" name="style" value="outdoor" checked><span>户外 Outdoor<em>liberty · 带山体阴影</em></span></label>
+        <label><input type="radio" name="style" value="minimal"><span>极简 Minimal<em>positron · 浅灰，突出轨迹</em></span></label>
+        <label><input type="radio" name="style" value="night"><span>夜间 Night<em>dark · 深色，省电</em></span></label>
+        <label><input type="radio" name="style" value="fjord"><span>峡湾 Fjord<em>fiord · 冷色地形感</em></span></label>
+      </div>
+      <p class="hint" id="tile-hint" hidden></p>
+    </section>
+    <section class="panel">
+      <h2>地形</h2>
+      <div class="layers">
+        <label><input type="checkbox" id="hillshade" checked><span>山体阴影<em>Terrarium DEM · 无 key</em></span></label>
+        <label><input type="checkbox" id="terrain"><span>3D 地形<em>倾斜 + 2.1 倍高程</em></span></label>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>坡度着色</h2>
+      <ul class="legend" id="legend"></ul>
+    </section>
+    <section class="panel">
+      <h2>技术栈</h2>
+      <p class="note"><b>MapLibre GL JS 5</b>（BSD-3，约 230 KB gzip）+ OpenFreeMap 矢量瓦片，无 key、不限次数。可换样式、可叠山体阴影与 3D；需要 WebGL。</p>
+    </section>
+  </aside>
+</div>
+
+<footer class="demo-footer">
+  <span>数据：© OpenStreetMap contributors · 瓦片：OpenFreeMap · DEM：Mapzen/AWS Terrain Tiles</span>
+  <span>轨迹来自 且听风吟60K.gpx</span>
+</footer>
+
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<script src="./demo.js?v=demo-1"></script>
+<script>
+'use strict';
+const OFM = 'https://tiles.openfreemap.org/styles/';
+const STYLES = { outdoor: 'liberty', minimal: 'positron', night: 'dark', fjord: 'fiord' };
+const DEM = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+/* MapLibre counts 512 px tiles, Leaflet 256 px: the same view is one zoom lower here.
+   The compare page speaks Leaflet zoom, so convert on the way in and out. */
+const ZOOM_OFFSET = -1;
+
+const EMBED = new URLSearchParams(location.search).has('embed');
+if (EMBED) document.body.classList.add('embed');
+
+(async function () {
+  const route = await Demo.load('./route.json');
+  document.querySelector('#stats').innerHTML = Demo.statsHtml(route);
+  document.querySelector('#legend').innerHTML = Demo.legendHtml();
+
+  const cps = Demo.orderedCheckpoints(route);
+  const geojson = {
+    type: 'FeatureCollection',
+    features: Demo.runs(route).map((run) => ({
+      type: 'Feature',
+      properties: { g: run.bucket },
+      geometry: { type: 'LineString', coordinates: run.coords.map((c) => [c[1], c[0]]) }
+    }))
+  };
+  // Band order keeps the darkest strokes on top of light ones at shared vertices.
+  const colorExpression = ['match', ['get', 'g'],
+    ...Demo.RAMP.flatMap((step, index) => [index, step.color]), Demo.RAMP[3].color];
+
+  const map = new maplibregl.Map({
+    container: 'map',
+    style: OFM + STYLES.outdoor,
+    center: Demo.center(route),
+    zoom: 11 + ZOOM_OFFSET,
+    attributionControl: false,
+    hash: false
+  });
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+  map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-right');
+  map.addControl(new maplibregl.AttributionControl({
+    compact: true,
+    customAttribution: '© OpenFreeMap · © OpenStreetMap contributors · DEM: Mapzen/AWS'
+  }));
+
+  const markers = cps.map((cp, index) => {
+    const node = Demo.checkpointElement(cp, index, cps.length);
+    node.addEventListener('click', () => {
+      new maplibregl.Popup({ offset: 14, closeButton: true })
+        .setLngLat([cp.lon, cp.lat])
+        .setHTML(`<b>${cp.name}</b><br>累计 ${cp.km.toFixed(2)} km · 距轨迹 ${cp.offset_m} m`)
+        .addTo(map);
+    });
+    return new maplibregl.Marker({ element: node, anchor: 'left' }).setLngLat([cp.lon, cp.lat]).addTo(map);
+  });
+
+  /* Style switches wipe custom layers, so overlays are re-added on every style load. */
+  function addTerrainAndRoute() {
+    if (!map.getSource('dem')) {
+      map.addSource('dem', { type: 'raster-dem', tiles: [DEM], encoding: 'terrarium', tileSize: 256, maxzoom: 15 });
+    }
+    if (!map.getLayer('hillshade')) {
+      map.addLayer({
+        id: 'hillshade', type: 'hillshade', source: 'dem',
+        paint: { 'hillshade-exaggeration': 0.45, 'hillshade-shadow-color': '#2b2418', 'hillshade-highlight-color': '#fff8e6' }
+      });
+    }
+    map.setLayoutProperty('hillshade', 'visibility', document.querySelector('#hillshade').checked ? 'visible' : 'none');
+
+    if (!map.getSource('route')) {
+      map.addSource('route', { type: 'geojson', data: geojson, lineMetrics: false });
+    }
+    // White halo, then a soft dark edge: readable on both light and dark styles.
+    if (!map.getLayer('route-halo')) {
+      map.addLayer({ id: 'route-halo', type: 'line', source: 'route',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#fffdf9', 'line-width': 11, 'line-opacity': 0.9 } });
+    }
+    if (!map.getLayer('route-casing')) {
+      map.addLayer({ id: 'route-casing', type: 'line', source: 'route',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#23201c', 'line-width': 7, 'line-opacity': 0.3 } });
+    }
+    if (!map.getLayer('route-line')) {
+      map.addLayer({ id: 'route-line', type: 'line', source: 'route',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': colorExpression, 'line-width': 5.6 } });
+    }
+    applyTerrain();
+  }
+
+  function applyTerrain() {
+    const on = document.querySelector('#terrain').checked;
+    map.setTerrain(on ? { source: 'dem', exaggeration: 2.1 } : null);
+    map.easeTo({ pitch: on ? 62 : 0, duration: 700 });
+  }
+
+  // Exposed so the demo can be smoke-checked from the console or an automated run.
+  window.__map = map;
+  const hashView = EMBED ? /^#([\d.]+)\/(-?[\d.]+)\/(-?[\d.]+)$/.exec(location.hash) : null;
+  // One init path: overlays always land after the first style is fully ready.
+  map.on('load', () => {
+    addTerrainAndRoute();
+    if (hashView) { map.jumpTo({ center: [Number(hashView[3]), Number(hashView[2])], zoom: Number(hashView[1]) + ZOOM_OFFSET }); return; }
+    if (EMBED) return; // the compare page sets one shared view for both panes
+    map.fitBounds(Demo.fitBounds(route), { padding: { top: 40, bottom: 40, left: 40, right: 40 }, duration: 0 });
+  });
+
+  // setStyle drops custom layers; re-add them once the new style reports ready.
+  document.querySelector('#styles').addEventListener('change', async (event) => {
+    await map.setStyle(OFM + STYLES[event.target.value], { diff: false });
+    addTerrainAndRoute();
+  });
+  document.querySelector('#hillshade').addEventListener('change', () => {
+    if (map.getLayer('hillshade')) map.setLayoutProperty('hillshade', 'visibility', document.querySelector('#hillshade').checked ? 'visible' : 'none');
+  });
+  document.querySelector('#terrain').addEventListener('change', applyTerrain);
+
+  // Report the view to the compare page, and follow the other pane when it moves.
+  let echo = false;
+  map.on('moveend', () => {
+    if (echo) { echo = false; return; }
+    if (parent === window) return;
+    const c = map.getCenter();
+    parent.postMessage({ type: 'view', engine: 'maplibre', lat: c.lat, lng: c.lng, zoom: map.getZoom() - ZOOM_OFFSET }, location.origin);
+  });
+  window.addEventListener('message', (event) => {
+    if (event.origin !== location.origin || event.data?.type !== 'view' || event.data.engine === 'maplibre') return;
+    echo = true;
+    map.jumpTo({ center: [event.data.lng, event.data.lat], zoom: event.data.zoom + ZOOM_OFFSET });
+  });
+  if (EMBED && parent !== window) map.once('idle', () => parent.postMessage({ type: 'ready', engine: 'maplibre' }, location.origin));
+
+  let failures = 0;
+  map.on('error', (event) => {
+    if (++failures !== 2) return;
+    const hint = document.querySelector('#tile-hint');
+    hint.hidden = false;
+    hint.textContent = `资源加载异常：${String(event.error?.message || event.error).slice(0, 60)}`;
+  });
+})().catch((error) => {
+  document.querySelector('#map').innerHTML = `<p style="padding:20px;font:13px var(--mono);color:#a3402a">${error.message}</p>`;
+});
+</script>
+</body>
+</html>
